@@ -7,6 +7,8 @@ import serviceRoutes from "./serviceRoutes";
 import customerRoutes from "./customerRoutes";
 import vehicleRoutes from "./vehicleRoutes";
 
+import customerVehicleRoutes from "./CustomerSelfRoute/vehicleRoute";
+
 const router = Router();
 
 router.use("/auth", authRoutes);
@@ -15,5 +17,7 @@ router.use("/staff", staffRoutes);
 router.use("/services", serviceRoutes);
 router.use("/customers", customerRoutes);
 router.use("/vehicles", vehicleRoutes);
+
+router.use("/customer/vehicles", customerVehicleRoutes);
 
 export default router;

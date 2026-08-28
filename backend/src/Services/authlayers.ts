@@ -6,7 +6,6 @@ import {
   CustomerLoginInput,
   CustomerRegisterInput,
 } from "../Validations/authValidation";
-import { custom } from "zod";
 
 export const login = async ( data: LoginInput ) => {
 

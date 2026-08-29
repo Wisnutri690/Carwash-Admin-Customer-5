@@ -8,6 +8,7 @@ import customerRoutes from "./customerRoutes";
 import vehicleRoutes from "./vehicleRoutes";
 
 import customerVehicleRoutes from "./CustomerSelfRoute/vehicleRoute";
+import customerOrderRoutes from "./CustomerSelfRoute/orderRoute";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/customers", customerRoutes);
 router.use("/vehicles", vehicleRoutes);
 
 router.use("/customer/vehicles", customerVehicleRoutes);
+router.use("/customer/orders", customerOrderRoutes);
 
 export default router;

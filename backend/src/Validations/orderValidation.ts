@@ -19,24 +19,26 @@ export const createOrderSchema = z.object({
 });
 
 export const updateOrderSchema = z.object({
-    
-    status: z 
+  status: z
     .enum(['WAITING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
     .optional(),
 
-    paymentStatus: z
+  staffId: z.number().int().positive().optional(),
+  adminId: z.number().int().positive().optional(),
+
+  paymentStatus: z
     .enum(['UNPAID', 'PAID'])
     .optional(),
 
-    paymentMethod: z
+  paymentMethod: z
     .enum(['QRIS', 'CASH', 'TRANSFER'])
     .optional(),
 
-    notes: z
+  notes: z
     .string()
     .optional(),
 
-    completedAt: z
+  completedAt: z
     .coerce
     .date()
     .optional(),

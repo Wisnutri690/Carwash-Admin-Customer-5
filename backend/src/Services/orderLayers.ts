@@ -1,6 +1,7 @@
 import prisma from "../Config/prisma";
 import { CreateOrderInput, UpdateOrderInput, } from "../Validations/orderValidation";
 import { PaymentInput } from "../Validations/paymentValidation";
+import { io } from "../server";
 
 export const createOrder = async ( data: CreateOrderInput, adminId: number) => {
 
@@ -171,12 +172,23 @@ export const createOrder = async ( data: CreateOrderInput, adminId: number) => {
                 data.completedAt = new Date();
             }
 
-            return await prisma.order.update({
+            // 1. Simpan perubahan ke Database
+            const updatedOrder = await prisma.order.update({
                 where: {
                     id,
                 },
                 data,
+                include: {
+                    staff: true,
+                    vehicle: true,
+                    customer: true,
+                },
             });
+
+            // 🌟 Pancarkan event perubahan status ke seluruh client
+            io.emit("ORDER_STATUS_UPDATED", updatedOrder);
+
+            return updatedOrder;
     };
 
     export const deleteOrder = async (id: number) => {

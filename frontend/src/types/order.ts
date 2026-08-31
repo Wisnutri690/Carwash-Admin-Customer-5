@@ -69,3 +69,21 @@ export interface SingleOrderResponse {
     message: string;
     data: Order;
 }
+
+export interface QueueInfo {
+  orderId: number | string;
+  status: OrderStatus;
+  queuePosition: number;
+  ahead: number;
+  estimatedMinutes: number;
+}
+
+export interface CustomerCreateOrderPayload {
+  vehicleId: number;
+  services: {
+    serviceId: number;
+    quantity?: number;
+  }[];
+  notes?: string;
+}
+

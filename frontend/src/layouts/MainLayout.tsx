@@ -1,3 +1,4 @@
+import React from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { 
   HiOutlineHome, 
@@ -7,10 +8,11 @@ import {
   HiOutlineSparkles, 
   HiOutlineUserGroup,
   HiOutlineLogout,
-  HiOutlineUser
+  HiOutlineUser,
+  HiOutlineGlobeAlt
 } from "react-icons/hi";
 
-const MainLayout = () => {
+const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,39 +30,51 @@ const MainLayout = () => {
     { label: "Pelanggan", path: "/customers", icon: HiOutlineUsers },
     { label: "Kendaraan", path: "/vehicles", icon: HiOutlineTruck },
     { label: "Layanan", path: "/services", icon: HiOutlineSparkles },
-    { label: "Order", path: "/orders", icon: HiOutlineClipboardList },
-    { label: "Staf", path: "/staff", icon: HiOutlineUserGroup },
+    { label: "Antrean Kasir", path: "/orders", icon: HiOutlineClipboardList },
+    { label: "Staf Cuci", path: "/staff", icon: HiOutlineUserGroup },
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden font-sans pb-28">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-purple-900/20 blur-[180px] pointer-events-none rounded-full animate-pulse-slow" />
-
-      <header className="sticky top-0 z-40 bg-neutral-950/80 border-b border-neutral-800/80 backdrop-blur-2xl px-6 py-4">
+    <div className="min-h-screen bg-[#f8fafc] text-neutral-900 flex flex-col relative overflow-hidden font-sans pb-28 selection:bg-black selection:text-white">
+      <header className="sticky top-0 z-40 bg-white/95 border-b border-neutral-200 backdrop-blur-2xl px-6 py-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[0.25em] text-white">
-              APEX<span className="text-purple-500">.</span>
-            </h1>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono font-bold tracking-widest bg-purple-500/10 border border-purple-500/30 text-purple-400">
-              Carwash System
-            </span>
+            <div className="w-10 h-10 rounded-2xl bg-black flex items-center justify-center font-black text-white text-lg shadow-sm">
+              A
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-neutral-900 flex items-center gap-1.5">
+                APEX<span className="text-purple-600">.</span>
+              </h1>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 -mt-1 block">
+                Command Center &amp; Cashier
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-neutral-900/90 border border-neutral-800 rounded-2xl px-3.5 py-1.5 shadow-lg">
-              <div className="w-8 h-8 rounded-xl bg-purple-900/50 border border-purple-500/40 flex items-center justify-center text-purple-300 font-extrabold text-xs">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-800 px-4 py-2 rounded-full text-xs font-bold transition shadow-sm cursor-pointer"
+              title="Buka Portal Customer"
+            >
+              <HiOutlineGlobeAlt className="text-neutral-900 text-sm" />
+              <span className="hidden md:inline">Portal Customer</span>
+            </button>
+
+            <div className="flex items-center gap-2.5 bg-white border border-neutral-200 rounded-full px-3.5 py-1.5 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-neutral-100 text-neutral-900 flex items-center justify-center text-xs font-bold">
                 <HiOutlineUser className="w-4 h-4" />
               </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-extrabold text-white leading-tight">{admin.name || "Admin APEX"}</p>
+              <div className="hidden sm:block text-left pr-2">
+                <p className="text-xs font-bold text-neutral-900 leading-tight">{admin.name || "Admin APEX"}</p>
                 <p className="text-[10px] text-neutral-400 font-mono">{admin.email}</p>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-neutral-900 hover:bg-rose-950/50 border border-neutral-800 hover:border-rose-500/50 text-neutral-400 hover:text-rose-400 px-3.5 py-2 rounded-2xl transition-all font-bold text-xs shadow-lg"
+              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 px-3.5 py-2 rounded-full transition font-bold text-xs shadow-sm cursor-pointer"
               title="Keluar"
             >
               <HiOutlineLogout className="w-4 h-4" />
@@ -74,8 +88,8 @@ const MainLayout = () => {
         <Outlet />
       </main>
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 pointer-events-none">
-        <nav className="pointer-events-auto bg-neutral-950/90 border border-neutral-800/90 backdrop-blur-2xl rounded-3xl p-2 shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex items-center justify-around gap-1 transition-all duration-300 hover:border-purple-500/50">
+      <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] max-w-2xl pointer-events-none">
+        <nav className="pointer-events-auto bg-black text-white backdrop-blur-2xl rounded-full p-1.5 sm:p-2 shadow-[0_20px_50px_rgba(0,0,0,0.35)] flex items-center justify-between gap-1 transition-all border border-neutral-800">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -83,17 +97,14 @@ const MainLayout = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`relative flex flex-col items-center justify-center py-2 px-3 sm:px-5 rounded-2xl transition-all duration-300 ${
+                className={`flex-1 relative flex flex-col items-center justify-center py-1.5 sm:py-2 px-1 sm:px-3 rounded-full transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? "text-white bg-purple-600 shadow-lg shadow-purple-900/60 scale-105"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/80"
+                    ? "text-black bg-white shadow-md font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-neutral-900"
                 }`}
               >
-                <Icon className={`w-5 h-5 mb-0.5 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
-                <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
-                {isActive && (
-                  <span className="absolute -bottom-1 w-2 h-0.5 rounded-full bg-purple-300 shadow-[0_0_8px_#c084fc]" />
-                )}
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
+                <span className="text-[9px] sm:text-[11px] font-bold tracking-tight truncate max-w-full">{item.label}</span>
               </button>
             );
           })}

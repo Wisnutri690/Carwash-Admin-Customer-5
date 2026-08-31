@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import CustomerPortal from "./pages/CustomerPortal/CustomerPortal";
 import Login from "./pages/Login/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
@@ -14,7 +15,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* 🌟 Halaman Utama Publik Customer */}
+        <Route path="/" element={<CustomerPortal />} />
         <Route path="/login" element={<Login />} />
 
         <Route element={<ProtectedRoute />}>

@@ -1,5 +1,6 @@
 import prisma from "../../Config/prisma";
 import { CustomerCreateOrderInput } from "../../Validations/CustomerSelfValidations/customerSelfServiceValidation";
+import { emitOrderStatusUpdated } from "../../Config/socket";
 
 export const calculateQueueInfo = async (orderId: number) => {
   const targetOrder = await prisma.order.findUnique({
@@ -140,6 +141,8 @@ export const createCustomerOrder = async (
       });
     }
 
+    emitOrderStatusUpdated(order);
+
     return order;
   });
 };
@@ -152,6 +155,7 @@ export const getMyActiveOrders = async (customerId: number) => {
     },
     include: {
       vehicle: true,
+      staff: true,
       orderItems: { include: { service: true } },
     },
     orderBy: { id: "desc" },
@@ -178,6 +182,7 @@ export const getMyOrderHistory = async (customerId: number) => {
     },
     include: {
       vehicle: true,
+      staff: true,
       invoice: true,
       orderItems: { include: { service: true } },
     },
@@ -200,8 +205,12 @@ export const cancelMyOrder = async (customerId: number, orderId: number) => {
     );
   }
 
-  return await prisma.order.update({
+  const cancelled = await prisma.order.update({
     where: { id: orderId },
     data: { status: "CANCELLED" },
   });
+
+  emitOrderStatusUpdated(cancelled);
+
+  return cancelled;
 };

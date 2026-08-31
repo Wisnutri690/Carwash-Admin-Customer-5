@@ -1,25 +1,28 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  HiOutlineSparkles,
   HiOutlineTruck,
   HiOutlineCurrencyDollar,
   HiOutlineUsers,
-  HiOutlineCheckCircle,
-  HiOutlineCreditCard,
   HiOutlineClock,
-  HiOutlineXCircle
+  HiOutlineRefresh,
+  HiOutlineUserGroup
 } from "react-icons/hi";
 import { getCustomer } from "../../services/customerService";
-import { getOrders } from "../../services/orderService";
+import { getOrders, updateOrderStatus, updateOrderPayment } from "../../services/orderService";
+import { getStaffs } from "../../services/staffService";
 import type { Customer } from "../../types/customer";
 import type { Order, OrderStatus } from "../../types/order";
+import type { Staff } from "../../types/staff";
+import socket from "../../config/socket";
 
-const Dashboard = () => {
+const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [staffs, setStaffs] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeTabFilter, setActiveTabFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED">("ALL");
 
   const adminDataString = localStorage.getItem("admin");
   const admin = adminDataString ? JSON.parse(adminDataString) : { name: "Admin APEX", email: "admin@apexcarwash.com" };
@@ -27,12 +30,14 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [customersData, ordersData] = await Promise.all([
-        getCustomer(),
-        getOrders()
+      const [customersData, ordersData, staffsData] = await Promise.all([
+        getCustomer().catch(() => []),
+        getOrders().catch(() => []),
+        getStaffs().catch(() => []),
       ]);
       setCustomers(customersData);
       setOrders(ordersData);
+      setStaffs(staffsData);
     } catch (error) {
       console.error("Gagal mengambil data dashboard", error);
     } finally {
@@ -44,248 +49,339 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    const handleStatusUpdate = () => {
+      fetchDashboardData();
+    };
+
+    socket.on("ORDER_STATUS_UPDATED", handleStatusUpdate);
+
+    return () => {
+      socket.off("ORDER_STATUS_UPDATED", handleStatusUpdate);
+    };
+  }, []);
+
   const totalRevenue = orders
     .filter((o) => o.paymentStatus === "PAID")
     .reduce((sum, o) => sum + Number(o.totalPrice), 0);
 
-  const activeWashCount = orders.filter((o) => o.status === "IN_PROGRESS" || o.status === "WAITING").length;
+  const waitingOrders = orders.filter((o) => o.status === "WAITING");
+  const inProgressOrders = orders.filter((o) => o.status === "IN_PROGRESS");
+  const activeOrdersCount = waitingOrders.length + inProgressOrders.length;
 
-  const getOrderStatusConfig = (status: OrderStatus, paymentStatus: string) => {
+  const filteredOrders = orders.filter((o) => {
+    if (activeTabFilter === "ACTIVE") return o.status === "WAITING" || o.status === "IN_PROGRESS";
+    if (activeTabFilter === "COMPLETED") return o.status === "COMPLETED";
+    return true;
+  });
+
+  const handleAdvanceStatus = async (orderId: string | number, nextStatus: OrderStatus) => {
+    try {
+      await updateOrderStatus(orderId, { status: nextStatus });
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Gagal memperbarui status order");
+    }
+  };
+
+  const handleMarkPaid = async (orderId: string | number) => {
+    try {
+      await updateOrderPayment(orderId, { paymentStatus: "PAID", paymentMethod: "CASH" });
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Gagal memproses pembayaran");
+    }
+  };
+
+  const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
       case "WAITING":
-        return {
-          label: "Menunggu Antrean",
-          textColor: "text-amber-400",
-          border: "hover:border-amber-500/60 hover:shadow-[0_0_35px_rgba(245,158,11,0.3)]",
-          leftBorder: "bg-amber-500",
-          icon: HiOutlineClock,
-          iconBg: "bg-amber-900/40 border-amber-500/30 text-amber-300 group-hover:bg-amber-600 group-hover:text-white"
-        };
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "IN_PROGRESS":
-        return {
-          label: "Sedang Dicuci",
-          textColor: "text-blue-400",
-          border: "hover:border-blue-500/60 hover:shadow-[0_0_35px_rgba(59,130,246,0.3)]",
-          leftBorder: "bg-blue-500",
-          icon: HiOutlineSparkles,
-          iconBg: "bg-blue-900/40 border-blue-500/30 text-blue-300 group-hover:bg-blue-600 group-hover:text-white"
-        };
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "COMPLETED":
-        return {
-          label: paymentStatus === "PAID" ? "Selesai & Lunas" : "Selesai (Menunggu Pembayaran)",
-          textColor: paymentStatus === "PAID" ? "text-emerald-400" : "text-amber-400",
-          border: "hover:border-emerald-500/60 hover:shadow-[0_0_35px_rgba(16,185,129,0.3)]",
-          leftBorder: "bg-emerald-500",
-          icon: paymentStatus === "PAID" ? HiOutlineCheckCircle : HiOutlineCreditCard,
-          iconBg: "bg-emerald-900/40 border-emerald-500/30 text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white"
-        };
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "CANCELLED":
-        return {
-          label: "Dibatalkan",
-          textColor: "text-rose-400",
-          border: "hover:border-rose-500/60 hover:shadow-[0_0_35px_rgba(244,63,94,0.3)]",
-          leftBorder: "bg-rose-500",
-          icon: HiOutlineXCircle,
-          iconBg: "bg-rose-900/40 border-rose-500/30 text-rose-300 group-hover:bg-rose-600 group-hover:text-white"
-        };
+        return "bg-rose-50 text-rose-700 border-rose-200";
       default:
-        return {
-          label: status,
-          textColor: "text-neutral-400",
-          border: "hover:border-neutral-500",
-          leftBorder: "bg-neutral-500",
-          icon: HiOutlineClock,
-          iconBg: "bg-neutral-900 border-neutral-800 text-neutral-400"
-        };
+        return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
 
   return (
-    <div className="space-y-8 relative overflow-hidden animate-fade-in-up">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-neutral-800/80">
+    <div className="space-y-8 animate-fade-in-up">
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200/80">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-[0.2em] text-white mb-1">
-            Dashboard
-            <span className="text-purple-500">.</span>
-          </h1>
-          <p className="text-sm text-neutral-400">Ringkasan operasional dan aktivitas utama APEX Carwash</p>
-        </div>
-        <button
-          onClick={fetchDashboardData}
-          className="self-start md:self-auto text-xs px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 rounded-xl transition-all font-semibold">
-          Refresh Data
-        </button>
-      </div>
-
-      <div className="relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-8 shadow-[0_0_30px_rgba(0,0,0,0.9)] overflow-hidden group hover:border-purple-500/60 hover:shadow-[0_0_40px_rgba(168,85,247,0.25)] hover:-translate-y-1 transition-all duration-300">
-        <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-[0.2em] bg-purple-500/10 border border-purple-500/30 text-purple-400">
-              <HiOutlineSparkles className="w-3.5 h-3.5" /> Welcome Back
-            </span>
-            <span className="text-xs font-mono text-neutral-500">APEX Carwash Management App</span>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900">
+              Dashboard Operasional<span className="text-purple-600">.</span>
+            </h1>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
-
-          <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
-            Selamat Datang, <span className="text-purple-400">{admin.name || "Admin"}</span>!
-          </h2>
-
-          <p className="text-neutral-400 text-xs md:text-sm max-w-2xl leading-relaxed">
-            Sistem operasional pencucian dan detailing kendaraan APEX siap digunakan. Data transaksi di bawah ini terhubung secara real-time dengan backend API.
+          <p className="text-xs text-slate-500">
+            Selamat datang, <span className="font-bold text-slate-800">{admin.name || "Admin"}</span>. Pemantauan antrean dan transaksi kasir secara real-time.
           </p>
+        </div>
 
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <button
-              onClick={() => navigate("/customers")}
-              className="flex items-center gap-2.5 bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs px-6 py-3.5 rounded-2xl transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-105">
-              <HiOutlineUsers className="w-4 h-4" /> Kelola Pelanggan
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/orders")}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-full shadow-md transition"
+          >
+            <HiOutlineTruck className="text-sm" />
+            <span>Kelola Antrean</span>
+          </button>
+
+          <button
+            onClick={fetchDashboardData}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-full shadow-sm transition"
+          >
+            <HiOutlineRefresh className={`text-sm ${isLoading ? "animate-spin text-slate-900" : ""}`} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
         <div
-          onClick={() => navigate("/customers")}
-          className="relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-6 shadow-[0_0_25px_rgba(0,0,0,0.8)] hover:border-purple-500/60 hover:-translate-y-1.5 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] transition-all duration-300 group overflow-hidden cursor-pointer active:scale-95">
-          <div className="absolute top-0 left-0 w-1 h-full bg-purple-500 rounded-l-3xl" />
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Total Pelanggan</span>
-            <div className="p-3 bg-purple-900/30 border border-purple-500/30 rounded-2xl text-purple-300 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-              <HiOutlineUsers className="w-5 h-5" />
+          onClick={() => navigate("/orders")}
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Antrean Aktif</span>
+            <div className="w-9 h-9 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+              <HiOutlineClock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-white mb-1">{customers.length}</p>
-          <p className="text-xs text-neutral-500">Pelanggan Terdaftar</p>
+          <p className="text-3xl font-black text-slate-900 mb-1">{activeOrdersCount}</p>
+          <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+            <span>{waitingOrders.length} Menunggu</span>
+            <span>•</span>
+            <span className="text-purple-700 font-bold">{inProgressOrders.length} Dicuci</span>
+          </div>
         </div>
 
         <div
           onClick={() => navigate("/orders")}
-          className="relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-6 shadow-[0_0_25px_rgba(0,0,0,0.8)] hover:border-emerald-500/60 hover:-translate-y-1.5 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] transition-all duration-300 group overflow-hidden cursor-pointer active:scale-95">
-          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 rounded-l-3xl" />
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Pendapatan Lunas</span>
-            <div className="p-3 bg-emerald-900/30 border border-emerald-500/30 rounded-2xl text-emerald-300 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <HiOutlineCurrencyDollar className="w-5 h-5" />
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pendapatan Lunas</span>
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+              <HiOutlineCurrencyDollar className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-white mb-1">
+          <p className="text-2xl font-black text-slate-900 mb-1">
             Rp {totalRevenue.toLocaleString("id-ID")}
           </p>
-          <p className="text-xs text-neutral-500">Total Pembayaran Lunas</p>
+          <p className="text-[11px] text-slate-500 font-medium">Total Transaksi Kasir</p>
         </div>
 
         <div
-          onClick={() => navigate("/orders")}
-          className="relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-6 shadow-[0_0_25px_rgba(0,0,0,0.8)] hover:border-blue-500/60 hover:-translate-y-1.5 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300 group overflow-hidden cursor-pointer active:scale-95">
-          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-3xl" />
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Total Transaksi</span>
-            <div className="p-3 bg-blue-900/30 border border-blue-500/30 rounded-2xl text-blue-300 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-              <HiOutlineTruck className="w-5 h-5" />
+          onClick={() => navigate("/customers")}
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Pelanggan</span>
+            <div className="w-9 h-9 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700">
+              <HiOutlineUsers className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-white mb-1">{orders.length}</p>
-          <p className="text-xs text-neutral-500">Order Terdaftar di API</p>
+          <p className="text-3xl font-black text-slate-900 mb-1">{customers.length}</p>
+          <p className="text-[11px] text-slate-500 font-medium">Pelanggan Terdaftar</p>
         </div>
 
         <div
-          onClick={() => navigate("/orders")}
-          className="relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-6 shadow-[0_0_25px_rgba(0,0,0,0.8)] hover:border-amber-500/60 hover:-translate-y-1.5 hover:shadow-[0_0_30px_rgba(245,158,11,0.2)] transition-all duration-300 group overflow-hidden cursor-pointer active:scale-95">
-          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-3xl" />
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">Antrean Aktif</span>
-            <div className="p-3 bg-amber-900/30 border border-amber-500/30 rounded-2xl text-amber-300 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-              <HiOutlineSparkles className="w-5 h-5" />
+          onClick={() => navigate("/staff")}
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition cursor-pointer"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Staf Cuci Aktif</span>
+            <div className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+              <HiOutlineUserGroup className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-white mb-1">{activeWashCount}</p>
-          <p className="text-xs text-neutral-500">Waiting & In Progress</p>
+          <p className="text-3xl font-black text-slate-900 mb-1">
+            {staffs.filter((s) => s.isActive).length}
+          </p>
+          <p className="text-[11px] text-slate-500 font-medium">Dari Total {staffs.length} Staf</p>
         </div>
+
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-extrabold text-purple-400 tracking-[0.2em] uppercase">
-            Status Order & Transaksi Real-time
-          </h3>
-          <span className="text-xs font-mono text-neutral-500">Total: {orders.length} Order</span>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div className="lg:col-span-8 space-y-4">
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200/80 p-4 rounded-3xl shadow-sm">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black text-slate-900">Alur Pengerjaan Cuci</h2>
+              <span className="text-xs font-mono bg-slate-100 px-2.5 py-0.5 rounded-full text-slate-600 font-bold">
+                {filteredOrders.length} Order
+              </span>
+            </div>
 
-        {isLoading ? (
-          <div className="py-12 text-center text-neutral-400">
-            <div className="inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-xs font-semibold uppercase tracking-wider">Memuat data order dari backend...</p>
+            <div className="flex items-center gap-1.5">
+              {(["ALL", "ACTIVE", "COMPLETED"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTabFilter(tab)}
+                  className={`text-xs px-3.5 py-1.5 rounded-full font-bold transition ${
+                    activeTabFilter === tab
+                      ? "bg-slate-900 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100"
+                  }`}
+                >
+                  {tab === "ALL" ? "Semua" : tab === "ACTIVE" ? "Sedang Proses" : "Selesai"}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : orders.length === 0 ? (
-          <div className="bg-neutral-950 border border-neutral-800/80 rounded-3xl p-12 text-center text-neutral-400 shadow-[0_0_25px_rgba(0,0,0,0.8)]">
-            <p className="text-lg font-bold text-white mb-2">Belum Ada Transaksi Order</p>
-            <p className="text-xs max-w-sm mx-auto mb-4">Belum ada order transaksi yang terdaftar di database backend.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {orders.map((order) => {
-              const statusConfig = getOrderStatusConfig(order.status, order.paymentStatus);
-              const Icon = statusConfig.icon;
-              const servicesList = order.orderItems.map((item) => item.service.name).join(", ");
 
-              return (
-                <div
-                  key={order.id}
-                  className={`group relative bg-neutral-950 border border-neutral-800/80 rounded-3xl p-6 shadow-[0_0_25px_rgba(0,0,0,0.85)] ${statusConfig.border} hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between overflow-hidden`}>
-                  <div className={`absolute top-0 left-0 w-1.5 h-full ${statusConfig.leftBorder} rounded-l-3xl`} />
+          {isLoading ? (
+            <div className="py-16 text-center text-slate-400 bg-white border border-slate-200/80 rounded-3xl">
+              <div className="inline-block w-8 h-8 border-3 border-slate-900 border-t-transparent rounded-full animate-spin mb-2" />
+              <p className="text-xs font-medium">Memuat antrean kasir...</p>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center text-slate-400 shadow-sm">
+              <p className="font-bold text-slate-800 text-base mb-1">Belum Ada Antrean</p>
+              <p className="text-xs max-w-sm mx-auto">Pesanan cuci yang masuk dari customer akan tampil di sini secara real-time</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredOrders.map((order) => {
+                const servicesList = order.orderItems?.map((item) => item.service?.name).join(", ");
+                const isPaid = order.paymentStatus === "PAID";
 
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-2xl ${statusConfig.iconBg} border flex items-center justify-center font-bold transition-all duration-300`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest block">
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold text-slate-400">
                           #ORD-{String(order.id).padStart(3, "0")}
                         </span>
-                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${order.paymentStatus === "PAID" ?
-                          "bg-emerald-950/60 border-emerald-500/30 text-emerald-400" : "bg-amber-950/60 border-amber-500/30 text-amber-400"}`}>
-                          {order.paymentStatus === "PAID" ? "Lunas" : "Belum Bayar"}
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${getStatusBadge(order.status)}`}>
+                          {order.status}
                         </span>
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
+                          isPaid ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                          {isPaid ? "Lunas" : "Belum Bayar"}
+                        </span>
+                      </div>
+
+                      <h3 className="font-extrabold text-base text-slate-900">
+                        {order.customer?.name || "Pelanggan"}
+                      </h3>
+
+                      <p className="text-xs font-mono text-slate-700 font-bold">
+                        {order.vehicle ? `${order.vehicle.brand} ${order.vehicle.model} (${order.vehicle.plateNumber})` : "Kendaraan -"}
+                      </p>
+
+                      <p className="text-xs text-slate-500 pt-1">
+                        <span className="font-semibold text-slate-700">Layanan:</span> {servicesList || "Layanan Cuci"}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-xs text-slate-500 pt-0.5">
+                        <span>Petugas: <strong className="text-slate-800">{order.staff?.name || "Belum Ditugaskan"}</strong></span>
+                        <span>Total: <strong className="text-slate-900 font-bold">Rp {Number(order.totalPrice).toLocaleString("id-ID")}</strong></span>
                       </div>
                     </div>
 
-                    <h4 className="text-lg font-extrabold text-white group-hover:text-purple-300 transition-colors mb-0.5">
-                      {order.customer?.name || "Pelanggan Tanpa Nama"}
-                    </h4>
-                    <p className="text-xs text-neutral-400 font-semibold mb-1">
-                      {order.customer?.phone || "-"}
-                    </p>
-                    <p className="text-xs text-neutral-500 mb-3 font-mono">
-                      {order.vehicle ? `${order.vehicle.brand} ${order.vehicle.model} (${order.vehicle.plateNumber})` : "Kendaraan -"}
-                    </p>
+                    <div className="flex flex-wrap sm:flex-col items-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                      {order.status === "WAITING" && (
+                        <button
+                          onClick={() => handleAdvanceStatus(order.id, "IN_PROGRESS")}
+                          className="px-4 py-2 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-full shadow-sm transition"
+                        >
+                          Mulai Cuci
+                        </button>
+                      )}
 
-                    <div className="space-y-2 text-xs bg-neutral-900/90 border border-neutral-800 p-3.5 rounded-2xl">
-                      <p className="text-neutral-300">
-                        <span className="text-neutral-500 font-medium">Layanan:</span> {servicesList || "Tidak ada layanan"}
-                      </p>
-                      <p className="text-neutral-300">
-                        <span className="text-neutral-500 font-medium">Petugas:</span> {order.staff?.name || "-"}
-                      </p>
-                      <p className={`${statusConfig.textColor} font-extrabold`}>
-                        Status: {statusConfig.label}
-                      </p>
+                      {order.status === "IN_PROGRESS" && (
+                        <button
+                          onClick={() => handleAdvanceStatus(order.id, "COMPLETED")}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-sm transition"
+                        >
+                          Selesaikan Cuci
+                        </button>
+                      )}
+
+                      {!isPaid && (
+                        <button
+                          onClick={() => handleMarkPaid(order.id)}
+                          className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded-full transition"
+                        >
+                          Tandai Lunas
+                        </button>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
 
-                  <div className="pt-4 mt-4 border-t border-neutral-800/80 flex items-center justify-between text-xs">
-                    <span className="text-neutral-500">Total Tagihan</span>
-                    <span className="font-extrabold text-white text-sm">
-                      Rp {Number(order.totalPrice).toLocaleString("id-ID")}
-                    </span>
+        </div>
+
+        <div className="lg:col-span-4 space-y-4">
+          
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-sm text-slate-900">Petugas Cuci</h3>
+              <button
+                onClick={() => navigate("/staff")}
+                className="text-[11px] font-bold text-slate-700 hover:underline"
+              >
+                Kelola
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {staffs.slice(0, 5).map((staff) => (
+                <div key={staff.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                      {staff.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 leading-tight">{staff.name}</p>
+                      <p className="text-[10px] text-slate-400">{staff.phone || "Petugas Cuci"}</p>
+                    </div>
                   </div>
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                    staff.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
+                  }`}>
+                    {staff.isActive ? "Aktif" : "Off"}
+                  </span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        )}
+
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-md">
+            <h3 className="font-black text-sm mb-1">Akses Portal Customer</h3>
+            <p className="text-xs text-slate-300 leading-relaxed mb-4">
+              Ingin menguji pemesanan langsung sebagai pelanggan atau melihat live tracking mobil?
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-2.5 bg-white text-slate-900 font-bold text-xs rounded-full hover:bg-slate-100 transition shadow-sm"
+            >
+              Buka Layar Customer
+            </button>
+          </div>
+
+        </div>
+
       </div>
+
     </div>
   );
 };

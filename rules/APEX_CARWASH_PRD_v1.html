@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>APEX. Carwash System - Official PRD & Technical Specifications</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    @page {
+      size: A4;
+      margin: 11mm 11mm 11mm 11mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #ffffff;
+      color: #334155;
+      line-height: 1.45;
+      font-size: 10.5px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      page-break-after: always;
+      position: relative;
+      padding-bottom: 18px;
+    }
+
+    .page:last-child {
+      page-break-after: avoid;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #9333ea;
+      margin-bottom: 10px;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #0f172a;
+    }
+
+    .logo span {
+      color: #9333ea;
+    }
+
+    .meta-tag {
+      font-size: 8.5px;
+      font-weight: 600;
+      color: #64748b;
+      text-align: right;
+    }
+
+    .meta-tag strong {
+      color: #059669;
+    }
+
+    /* Headings */
+    h2 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 9px 0 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    h2::before {
+      content: "";
+      width: 4px;
+      height: 11px;
+      background: #9333ea;
+      border-radius: 2px;
+    }
+
+    p {
+      color: #475569;
+      font-size: 10px;
+      margin-bottom: 5px;
+    }
+
+    /* Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 7px;
+    }
+
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 7px 9px;
+    }
+
+    .card-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    ul {
+      margin-left: 13px;
+    }
+
+    li {
+      color: #334155;
+      font-size: 9.5px;
+      margin-bottom: 2px;
+    }
+
+    /* Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+
+    .status-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 5px 6px;
+      background: #f8fafc;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 3px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+    }
+
+    .badge-waiting { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-progress { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .badge-completed { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-cancelled { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Palette */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+
+    .palette-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 4px 5px;
+      text-align: center;
+    }
+
+    .color-pill {
+      height: 10px;
+      border-radius: 2px;
+      margin-bottom: 2px;
+    }
+
+    .color-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .color-code {
+      font-size: 7.5px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #64748b;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0 6px 0;
+      font-size: 9px;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      text-align: left;
+      padding: 3px 5px;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+      font-size: 8.5px;
+    }
+
+    td {
+      padding: 3px 5px;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+    }
+
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f1f5f9;
+      color: #7c3aed;
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-size: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .badge-method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 7.5px;
+      font-weight: 700;
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+
+    .badge-get { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-post { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+    .badge-put { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-patch { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-delete { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Footer */
+    .footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HALAMAN 1 -->
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="logo">APEX<span>.</span> CARWASH SYSTEM</div>
+        <p style="font-size: 8.5px; margin: 0; color: #64748b;">Fullstack Architecture &amp; Technical Specifications (Project 5)</p>
+      </div>
+      <div class="meta-tag">
+        Backend: <strong>Express + Prisma + PostgreSQL</strong><br>
+        Payment: <strong>Midtrans Snap (QRIS/VA) + Kasir</strong> • Realtime: <strong>Socket.IO</strong>
+      </div>
+    </div>
+
+    <h2>1. Arsitektur Dua Sisi &amp; User Journey</h2>
+    <div class="grid-2">
+      <div class="card" style="border-left: 3px solid #9333ea;">
+        <div class="card-title" style="color: #7e22ce;">🚗 Sisi Customer (Portal Mandiri)</div>
+        <ul>
+          <li><strong>Autentikasi Email</strong>: Registrasi/Login instan tanpa password.</li>
+          <li><strong>Vehicle Self-Service</strong>: Tambah, lihat, dan kelola mobil milik sendiri.</li>
+          <li><strong>Booking Mandiri</strong>: Booking cuci dengan proteksi anti-double booking.</li>
+          <li><strong>Pembayaran Online Midtrans</strong>: Bayar via Snap QRIS, Virtual Account (BCA/Mandiri/BRI/BNI), atau Bayar di Kasir.</li>
+          <li><strong>Live FIFO Tracking</strong>: Posisi antrean (<code>queuePosition</code>), mobil di depan (<code>ahead</code>), dan estimasi waktu tunggu realtime.</li>
+          <li><strong>Faktur Digital</strong>: Struk resmi lunas + tombol cetak &amp; unduh PDF.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="border-left: 3px solid #059669;">
+        <div class="card-title" style="color: #047857;">⚡ Sisi Admin / Kasir (Protected)</div>
+        <ul>
+          <li><strong>Autentikasi Admin</strong>: Login via email (<code>admin@carwash.com</code>) &amp; password.</li>
+          <li><strong>Order Management</strong>: Monitoring antrean, update status (<code>IN_PROGRESS</code>, <code>COMPLETED</code>), dan assign staf cuci (<code>staffId</code>).</li>
+          <li><strong>Kasir &amp; Billing</strong>: Proses pembayaran kasir (CASH/QRIS/TRANSFER) &amp; cetak invoice.</li>
+          <li><strong>Master Data</strong>: Layanan cuci, 8 Staf (7 aktif + 1 off), Customer, &amp; Kendaraan.</li>
+          <li><strong>Dashboard Metrik</strong>: Total Pelanggan, Omzet Lunas, Transaksi, &amp; Antrean Aktif.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>2. Status Order, Status Pembayaran &amp; Integrasi Midtrans</h2>
+    <div class="status-grid">
+      <div class="status-box">
+        <span class="status-badge badge-waiting">WAITING</span>
+        <p style="font-size: 8.5px; margin: 0;">Order masuk antrean FIFO. <code>staffId: null</code>.</p>
+      </div>
+      <div class="status-box">
+        <span class="status-badge badge-progress">IN_PROGRESS</span>
+        <p style="font-size: 8.5px; margin: 0;">Mobil masuk cuci. Admin menugaskan <code>staffId</code>.</p>
+      </div>
+      <div class="status-box">
+        <span class="status-badge badge-completed">COMPLETED</span>
+        <p style="font-size: 8.5px; margin: 0;">Cuci selesai, <code>completedAt</code> terisi, siap diambil.</p>
+      </div>
+      <div class="status-box">
+        <span class="status-badge badge-cancelled">CANCELLED</span>
+        <p style="font-size: 8.5px; margin: 0;">Dibatalkan oleh Customer (saat WAITING) / Admin.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-left: 3px solid #0284c7;">
+        <div class="card-title" style="color: #0369a1;">💳 Payment Gateway Midtrans Snap &amp; Kasir</div>
+        <p style="font-size: 9px; margin-bottom: 2px;">• <strong>Midtrans Snap Token</strong>: <code>POST /api/payments/midtrans-token</code> mengembalikan <code>snapToken</code> untuk pop-up checkout di frontend (QRIS, VA BCA/Mandiri/BRI/BNI, GoPay).</p>
+        <p style="font-size: 9px; margin-bottom: 2px;">• <strong>Webhook Notification</strong>: <code>POST /api/payments/midtrans-webhook</code> menangani callback otomatis dari Midtrans untuk mengubah <code>paymentStatus: "PAID"</code> dan generate invoice.</p>
+        <p style="font-size: 9px; margin: 0;">• <strong>Kasir Manual</strong>: Pembayaran tunai/manual di kasir (<code>POST /api/orders/:id/pay</code>).</p>
+      </div>
+      <div class="card">
+        <div class="card-title">⏱️ Kalkulasi Antrean FIFO</div>
+        <p style="font-size: 9px; margin-bottom: 2px;">• <code>queuePosition</code>: Urutan antrean di antara order WAITING.</p>
+        <p style="font-size: 9px; margin: 0;">• <code>estimatedMinutes</code>: Durasi mobil IN_PROGRESS + mobil WAITING di depannya.</p>
+      </div>
+    </div>
+
+    <h2>3. Identitas Visual &amp; Design System</h2>
+    <div class="palette-grid">
+      <div class="palette-item">
+        <div class="color-pill" style="background: #07080c;"></div>
+        <div class="color-label">Deep Obsidian</div>
+        <div class="color-code">#07080c (Dark Bg)</div>
+      </div>
+      <div class="palette-item">
+        <div class="color-pill" style="background: #a855f7;"></div>
+        <div class="color-label">Neon Purple</div>
+        <div class="color-code">#a855f7 (Accent/Brand)</div>
+      </div>
+      <div class="palette-item">
+        <div class="color-pill" style="background: #10b981;"></div>
+        <div class="color-label">Emerald Lunas</div>
+        <div class="color-code">#10b981 (PAID / Ready)</div>
+      </div>
+      <div class="palette-item">
+        <div class="color-pill" style="background: #f59e0b;"></div>
+        <div class="color-label">Warm Amber</div>
+        <div class="color-code">#f59e0b (In Progress)</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>APEX. Carwash Management System • Technical PRD Document</span>
+      <span>Halaman 1 dari 2</span>
+    </div>
+  </div>
+
+  <!-- HALAMAN 2 -->
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="logo">APEX<span>.</span> CARWASH SYSTEM</div>
+        <p style="font-size: 8.5px; margin: 0; color: #64748b;">Backend REST API Endpoints, Payment Gateway &amp; Realtime Specs</p>
+      </div>
+      <div class="meta-tag">
+        Port: <strong>3000</strong> • Base Path: <strong>/api</strong><br>
+        Source of Truth: <strong>Database PostgreSQL</strong>
+      </div>
+    </div>
+
+    <h2>4. Pemetaan Lengkap Endpoint REST API Backend</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 27%;">Endpoint</th>
+          <th style="width: 7%;">Method</th>
+          <th style="width: 10%;">Akses</th>
+          <th style="width: 28%;">Request Body / Params</th>
+          <th style="width: 28%;">Fungsi &amp; Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>/api/auth/login</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Public</td>
+          <td><code>{ email, password }</code></td>
+          <td>Login Admin $\rightarrow$ Token JWT (Role ADMIN)</td>
+        </tr>
+        <tr>
+          <td><code>/api/auth/customer/login</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Public</td>
+          <td><code>{ email }</code></td>
+          <td>Login Customer $\rightarrow$ Token JWT (Role CUSTOMER)</td>
+        </tr>
+        <tr>
+          <td><code>/api/auth/customer/register</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Public</td>
+          <td><code>{ name, email, phone }</code></td>
+          <td>Registrasi Akun Customer Baru</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/vehicles</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Customer</td>
+          <td>-</td>
+          <td>Daftar kendaraan milik customer</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/vehicles</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Customer</td>
+          <td><code>{ plateNumber, brand, model, color, year? }</code></td>
+          <td>Tambah kendaraan baru milik customer</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/vehicles/:id</code></td>
+          <td><span class="badge-method badge-delete">DELETE</span></td>
+          <td>Customer</td>
+          <td>-</td>
+          <td>Hapus kendaraan (dicegah jika sedang antre)</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/orders</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Customer</td>
+          <td><code>{ vehicleId, services: [{serviceId, quantity}], notes? }</code></td>
+          <td>Buat order booking cuci baru (Status: WAITING)</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/orders/active</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Customer</td>
+          <td>-</td>
+          <td>Ambil antrean aktif &amp; <code>queueInfo</code> (FIFO)</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/orders/history</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Customer</td>
+          <td>-</td>
+          <td>Riwayat order selesai (COMPLETED / CANCELLED)</td>
+        </tr>
+        <tr>
+          <td><code>/api/customer/orders/:id/cancel</code></td>
+          <td><span class="badge-method badge-patch">PATCH</span></td>
+          <td>Customer</td>
+          <td>-</td>
+          <td>Batalkan order mandiri (hanya jika masih WAITING)</td>
+        </tr>
+        <tr>
+          <td><code>/api/payments/midtrans-token</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Customer</td>
+          <td><code>{ orderId }</code></td>
+          <td>Request Snap Token Midtrans (QRIS/VA)</td>
+        </tr>
+        <tr>
+          <td><code>/api/payments/midtrans-webhook</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Midtrans</td>
+          <td>Midtrans notification payload</td>
+          <td>Callback status bayar (ubah PAID otomatis)</td>
+        </tr>
+        <tr>
+          <td><code>/api/orders</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Admin</td>
+          <td>-</td>
+          <td>Ambil seluruh data order di sistem</td>
+        </tr>
+        <tr>
+          <td><code>/api/orders/:id</code></td>
+          <td><span class="badge-method badge-put">PUT</span></td>
+          <td>Admin</td>
+          <td><code>{ status?, staffId?, notes? }</code></td>
+          <td>Update status cuci &amp; assign staf bertugas</td>
+        </tr>
+        <tr>
+          <td><code>/api/orders/:id/pay</code></td>
+          <td><span class="badge-method badge-post">POST</span></td>
+          <td>Admin</td>
+          <td><code>{ paymentMethod, paidAmount? }</code></td>
+          <td>Bayar di kasir, ubah PAID &amp; buat Invoice</td>
+        </tr>
+        <tr>
+          <td><code>/api/orders/:id/invoice</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Auth</td>
+          <td>-</td>
+          <td>Ambil data invoice resmi untuk dicetak/PDF</td>
+        </tr>
+        <tr>
+          <td><code>/api/services</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Public/Auth</td>
+          <td>-</td>
+          <td>Katalog paket layanan cuci &amp; harga</td>
+        </tr>
+        <tr>
+          <td><code>/api/staff</code></td>
+          <td><span class="badge-method badge-get">GET</span></td>
+          <td>Admin</td>
+          <td>-</td>
+          <td>Daftar seluruh staf cuci (8 Staf: 7 aktif, 1 off)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>5. Arsitektur WebSocket Realtime Tracking (Socket.IO)</h2>
+    <div class="card">
+      <p style="margin-bottom: 2px; color: #0f172a; font-weight: 600;">
+        Alur Realtime Event &amp; Sinkronisasi:
+      </p>
+      <ul>
+        <li><strong>Initial State (REST)</strong>: Frontend memuat data antrean awal via <code>GET /api/customer/orders/active</code>.</li>
+        <li><strong>Socket Connection</strong>: Client terhubung ke server Socket.IO pada port yang sama (HTTP port 3000).</li>
+        <li><strong>Event Broadcast</strong>: Ketika Admin mengubah status order atau Customer membayar via Midtrans, backend memancarkan event <code>ORDER_STATUS_UPDATED</code> dan <code>QUEUE_UPDATED</code>.</li>
+        <li><strong>Reconnect Resilience</strong>: Saat koneksi internet terputus lalu kembali, frontend melakukan <em>re-fetch</em> REST API untuk sinkronisasi mutlak.</li>
+      </ul>
+    </div>
+
+    <h2>6. Roadmap Eksekusi Terpadu (9 Step)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <p><strong>Step 1: REST API + Booking + FIFO (Done ✅)</strong><br>Autentikasi dual role, vehicle CRUD, booking, dan FIFO queue.</p>
+        <p style="margin-top: 3px;"><strong>Step 2: Setup Socket.IO Server (Next 🚀)</strong><br>Integrasi Socket.IO pada Express HTTP server port 3000.</p>
+        <p style="margin-top: 3px;"><strong>Step 3: Test Connection Sederhana</strong><br>Uji coba koneksi client-server websocket handshake.</p>
+        <p style="margin-top: 3px;"><strong>Step 4: Implement Order Room</strong><br>Isolasi event per customer / order room.</p>
+        <p style="margin-top: 3px;"><strong>Step 5: Event ORDER_STATUS_UPDATED</strong><br>Broadcast status order saat diproses oleh Admin.</p>
+      </div>
+
+      <div class="card">
+        <p><strong>Step 6: Event QUEUE_UPDATED</strong><br>Kalkulasi ulang dan update antrean customer realtime.</p>
+        <p style="margin-top: 3px;"><strong>Step 7: Payment Gateway Midtrans Integration</strong><br>Snap Token endpoint, checkout QRIS/VA, &amp; webhook handler.</p>
+        <p style="margin-top: 3px;"><strong>Step 8: Frontend Realtime Tracking &amp; Payment</strong><br>UI live stepper, Midtrans Snap dialog, dan invoice PDF.</p>
+        <p style="margin-top: 3px;"><strong>Step 9: Reconnect Resilience &amp; Auth Guard</strong><br>Sinkronisasi otomatis saat reconnect &amp; validasi JWT.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>APEX. Carwash Management System • Technical PRD Document</span>
+      <span>Halaman 2 dari 2</span>
+    </div>
+  </div>
+
+</body>
+</html>

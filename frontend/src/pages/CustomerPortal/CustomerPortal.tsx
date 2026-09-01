@@ -97,6 +97,9 @@ const getCarArtwork = (
 const CustomerPortal: React.FC = () => {
   const navigate = useNavigate();
 
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<
     "home" | "services" | "vehicles" | "history" | "profile"
   >("home");
@@ -216,6 +219,14 @@ const CustomerPortal: React.FC = () => {
         currentVehicle && Number(o.vehicleId) === Number(currentVehicle.id),
     ) ||
     activeOrders[0] ||
+    null;
+
+  const latestCompletedOrder =
+    orderHistory.find(
+      (o) =>
+        currentVehicle && Number(o.vehicleId) === Number(currentVehicle.id),
+    ) ||
+    orderHistory[0] ||
     null;
 
   const toggleService = (serviceId: number) => {
@@ -708,7 +719,7 @@ const CustomerPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {currentOrder && (
+                {currentOrder ? (
                   <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -753,8 +764,7 @@ const CustomerPortal: React.FC = () => {
                             : "Belum Lunas"}
                         </span>
                       </p>
-
-                      {currentOrder.paymentStatus !== "PAID" && (
+                      {currentOrder.paymentStatus !== "PAID" ? (
                         <button
                           onClick={() => handlePayOrder(currentOrder.id)}
                           disabled={payingOrderId === Number(currentOrder.id)}
@@ -764,10 +774,73 @@ const CustomerPortal: React.FC = () => {
                             ? "Memproses..."
                             : "💳 Bayar Sekarang"}
                         </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedInvoiceOrder(currentOrder)}
+                          className="bg-slate-900 hover:bg-black text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition"
+                        >
+                          📄 Lihat Invoice
+                        </button>
                       )}
                     </div>
                   </div>
-                )}
+                ) : latestCompletedOrder ? (
+                  <div className="bg-white border border-emerald-200/80 rounded-3xl p-5 shadow-sm bg-gradient-to-br from-white to-emerald-50/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                        <HiOutlineShieldCheck className="text-emerald-600" />{" "}
+                        Pencucian Terakhir Selesai
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold uppercase px-3 py-0.5 rounded-full border ${
+                          latestCompletedOrder.paymentStatus === "PAID"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-amber-50 border-amber-200 text-amber-700"
+                        }`}
+                      >
+                        {latestCompletedOrder.paymentStatus === "PAID"
+                          ? "Lunas"
+                          : "Belum Lunas"}
+                      </span>
+                    </div>
+                    <p className="text-sm font-black text-slate-900">
+                      Order #{latestCompletedOrder.id}:{" "}
+                      {latestCompletedOrder.orderItems
+                        ?.map((i: any) => i.service?.name)
+                        .join(", ") || "Paket Cuci"}
+                    </p>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-slate-500">
+                        Total Pembayaran:{" "}
+                        <span className="font-black text-slate-900">
+                          Rp{" "}
+                          {Number(latestCompletedOrder.totalPrice).toLocaleString(
+                            "id-ID",
+                          )}
+                        </span>
+                      </p>
+                      {latestCompletedOrder.paymentStatus === "PAID" ? (
+                        <button
+                          onClick={() => setSelectedInvoiceOrder(latestCompletedOrder)}
+                          className="bg-slate-900 hover:bg-black text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition"
+                        >
+                          📄 Lihat Invoice
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handlePayOrder(latestCompletedOrder.id)}
+                          disabled={payingOrderId === Number(latestCompletedOrder.id)}
+                          className="bg-black hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition disabled:opacity-50"
+                        >
+                          {payingOrderId === Number(latestCompletedOrder.id)
+                            ? "Memproses..."
+                            : "💳 Bayar Sekarang"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
@@ -1751,6 +1824,132 @@ const CustomerPortal: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {selectedInvoiceOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6 relative">
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase block">
+                  BUKTI PEMBAYARAN RESMI
+                </span>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
+                  APEX Carwash Studio
+                </h2>
+                <p className="text-xs font-mono font-bold text-purple-700 mt-1">
+                  {selectedInvoiceOrder.invoice?.invoiceNumber ||
+                    `INV-${new Date(selectedInvoiceOrder.createdAt).toISOString().slice(0, 10).replace(/-/g, "")}-${selectedInvoiceOrder.id}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedInvoiceOrder(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+              >
+                <HiOutlineX className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div>
+                <span className="text-slate-400 font-bold block text-[10px] uppercase">
+                  Diterbitkan Untuk:
+                </span>
+                <p className="font-black text-slate-900 mt-0.5">
+                  {profile?.name || selectedInvoiceOrder.customer?.name || "Customer APEX"}
+                </p>
+                <p className="text-slate-500 font-medium text-[11px]">
+                  {profile?.email || customerEmail}
+                </p>
+              </div>
+              <div>
+                <span className="text-slate-400 font-bold block text-[10px] uppercase">
+                  Kendaraan:
+                </span>
+                <p className="font-black text-slate-900 mt-0.5">
+                  {selectedInvoiceOrder.vehicle
+                    ? `${selectedInvoiceOrder.vehicle.brand} ${selectedInvoiceOrder.vehicle.model}`
+                    : currentVehicle
+                    ? `${currentVehicle.brand} ${currentVehicle.model}`
+                    : "Mobil Customer"}
+                </p>
+                <p className="font-mono font-bold text-slate-700 text-[11px]">
+                  {selectedInvoiceOrder.vehicle?.plateNumber || currentVehicle?.plateNumber || "-"}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                Rincian Layanan
+              </span>
+              <div className="divide-y divide-slate-100 border-t border-b border-slate-100 py-1 text-xs">
+                {selectedInvoiceOrder.orderItems && selectedInvoiceOrder.orderItems.length > 0 ? (
+                  selectedInvoiceOrder.orderItems.map((item: any, idx: number) => (
+                    <div key={idx} className="py-2.5 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-slate-900">
+                          {item.service?.name || "Paket Perawatan"}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {item.quantity} x Rp {Number(item.price).toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                      <span className="font-black text-slate-900">
+                        Rp {Number(item.subtotal || item.price * item.quantity).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-2.5 flex justify-between items-center">
+                    <p className="font-bold text-slate-900">Paket Cuci APEX</p>
+                    <span className="font-black text-slate-900">
+                      Rp {Number(selectedInvoiceOrder.totalPrice).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Metode Pembayaran:</span>
+                <span className="font-mono font-bold text-slate-900 uppercase">
+                  {selectedInvoiceOrder.paymentMethod || "MIDTRANS / TRANSFER"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500 font-medium">Status Pembayaran:</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  LUNAS / PAID
+                </span>
+              </div>
+              <div className="flex justify-between items-baseline pt-3 border-t border-slate-200">
+                <span className="text-sm font-black text-slate-900">Total Dibayar:</span>
+                <span className="text-xl font-black text-slate-900">
+                  Rp {Number(selectedInvoiceOrder.totalPrice).toLocaleString("id-ID")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSelectedInvoiceOrder(null)}
+                className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              >
+                Tutup
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-5 py-2.5 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-full transition shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                🖨️ Cetak / Unduh PDF
+              </button>
+            </div>
           </div>
         </div>
       )}

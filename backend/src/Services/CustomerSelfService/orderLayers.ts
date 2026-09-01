@@ -156,6 +156,7 @@ export const getMyActiveOrders = async (customerId: number) => {
     include: {
       vehicle: true,
       staff: true,
+      invoice: true,
       orderItems: { include: { service: true } },
     },
     orderBy: { id: "desc" },

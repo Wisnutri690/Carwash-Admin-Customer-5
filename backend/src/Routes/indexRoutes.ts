@@ -10,6 +10,7 @@ import vehicleRoutes from "./vehicleRoutes";
 import customerVehicleRoutes from "./CustomerSelfRoute/vehicleRoute";
 import customerOrderRoutes from "./CustomerSelfRoute/orderRoute";
 import customerProfileRoutes from "./CustomerSelfRoute/profileRoute";
+import paymentRoutes from './paymentRoute';
 
 const router = Router();
 
@@ -23,5 +24,7 @@ router.use("/vehicles", vehicleRoutes);
 router.use("/customer/vehicles", customerVehicleRoutes);
 router.use("/customer/orders", customerOrderRoutes);
 router.use("/customer/profile", customerProfileRoutes);
+router.use("/payments", paymentRoutes);
+
 
 export default router;

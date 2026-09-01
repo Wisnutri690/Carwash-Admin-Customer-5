@@ -35,27 +35,47 @@ import {
   HiOutlineUser,
   HiOutlinePencilAlt,
   HiOutlinePhone,
-  HiOutlineMail
+  HiOutlineMail,
 } from "react-icons/hi";
-import { 
-  FaCar, 
-  FaSoap 
-} from "react-icons/fa";
+import { FaCar, FaSoap } from "react-icons/fa";
+import { createSnapPayment } from "../../services/snapCustomer";
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
-const getCarArtwork = (vehicle?: { brand?: string; model?: string } | null): string => {
+const getCarArtwork = (
+  vehicle?: { brand?: string; model?: string } | null,
+): string => {
   if (!vehicle) return "/assets/cars/porsche_911.jpg";
   const name = `${vehicle.brand || ""} ${vehicle.model || ""}`.toLowerCase();
 
-  if (name.includes("porsche") && (name.includes("taycan") || name.includes("turbo"))) {
+  if (
+    name.includes("porsche") &&
+    (name.includes("taycan") || name.includes("turbo"))
+  ) {
     return "/assets/cars/porsche_taycan.jpg";
   }
-  if (name.includes("porsche") || name.includes("911") || name.includes("gt3")) {
+  if (
+    name.includes("porsche") ||
+    name.includes("911") ||
+    name.includes("gt3")
+  ) {
     return "/assets/cars/porsche_911.jpg";
   }
-  if (name.includes("ferrari") || name.includes("sf90") || name.includes("roma")) {
+  if (
+    name.includes("ferrari") ||
+    name.includes("sf90") ||
+    name.includes("roma")
+  ) {
     return "/assets/cars/ferrari_sf90.jpg";
   }
-  if (name.includes("lambo") || name.includes("huracan") || name.includes("urus")) {
+  if (
+    name.includes("lambo") ||
+    name.includes("huracan") ||
+    name.includes("urus")
+  ) {
     return "/assets/cars/lamborghini_huracan.jpg";
   }
   if (name.includes("mclaren") || name.includes("720s")) {
@@ -64,7 +84,11 @@ const getCarArtwork = (vehicle?: { brand?: string; model?: string } | null): str
   if (name.includes("bmw") || name.includes("m4") || name.includes("m8")) {
     return "/assets/cars/bmw_m4.jpg";
   }
-  if (name.includes("nissan") || name.includes("gt-r") || name.includes("gtr")) {
+  if (
+    name.includes("nissan") ||
+    name.includes("gt-r") ||
+    name.includes("gtr")
+  ) {
     return "/assets/cars/nissan_gtr.jpg";
   }
   return "/assets/cars/porsche_911.jpg";
@@ -73,23 +97,34 @@ const getCarArtwork = (vehicle?: { brand?: string; model?: string } | null): str
 const CustomerPortal: React.FC = () => {
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"home" | "services" | "vehicles" | "history" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<
+    "home" | "services" | "vehicles" | "history" | "profile"
+  >("home");
   const [services, setServices] = useState<Service[]>([]);
-  const [selectedServices, setSelectedServices] = useState<{ [id: number]: number }>({});
+  const [selectedServices, setSelectedServices] = useState<{
+    [id: number]: number;
+  }>({});
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [customerToken, setCustomerToken] = useState<string | null>(localStorage.getItem("customerToken"));
-  const [customerEmail, setCustomerEmail] = useState<string>(localStorage.getItem("customerEmail") || "");
+  const [customerToken, setCustomerToken] = useState<string | null>(
+    localStorage.getItem("customerToken"),
+  );
+  const [customerEmail, setCustomerEmail] = useState<string>(
+    localStorage.getItem("customerEmail") || "",
+  );
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleIndex, setSelectedVehicleIndex] = useState<number>(0);
-  const [showAddVehicleModal, setShowAddVehicleModal] = useState<boolean>(false);
+  const [showAddVehicleModal, setShowAddVehicleModal] =
+    useState<boolean>(false);
   const [newVehicleForm, setNewVehicleForm] = useState({
     plateNumber: "",
     brand: "",
     model: "",
     color: "",
   });
+
+  const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
 
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [editVehicleForm, setEditVehicleForm] = useState({
@@ -99,13 +134,15 @@ const CustomerPortal: React.FC = () => {
     color: "",
     year: "",
   });
-
   const [activeOrders, setActiveOrders] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
 
   const [profile, setProfile] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
-  const [profileForm, setProfileForm] = useState<{ name: string; phone: string }>({
+  const [profileForm, setProfileForm] = useState<{
+    name: string;
+    phone: string;
+  }>({
     name: "",
     phone: "",
   });
@@ -118,12 +155,13 @@ const CustomerPortal: React.FC = () => {
       setServices(serviceData);
 
       if (customerToken) {
-        const [vehicleData, activeData, historyData, profileData] = await Promise.all([
-          getMyVehicles().catch(() => []),
-          getMyActiveOrders().catch(() => []),
-          getMyOrderHistory().catch(() => []),
-          getMyProfile().catch(() => null),
-        ]);
+        const [vehicleData, activeData, historyData, profileData] =
+          await Promise.all([
+            getMyVehicles().catch(() => []),
+            getMyActiveOrders().catch(() => []),
+            getMyOrderHistory().catch(() => []),
+            getMyProfile().catch(() => null),
+          ]);
         setVehicles(vehicleData);
         setActiveOrders(activeData);
         setOrderHistory(historyData);
@@ -172,9 +210,13 @@ const CustomerPortal: React.FC = () => {
 
   const currentVehicle = vehicles[selectedVehicleIndex] || null;
 
-  const currentOrder = activeOrders.find(
-    (o) => currentVehicle && Number(o.vehicleId) === Number(currentVehicle.id)
-  ) || activeOrders[0] || null;
+  const currentOrder =
+    activeOrders.find(
+      (o) =>
+        currentVehicle && Number(o.vehicleId) === Number(currentVehicle.id),
+    ) ||
+    activeOrders[0] ||
+    null;
 
   const toggleService = (serviceId: number) => {
     setSelectedServices((prev) => {
@@ -193,6 +235,46 @@ const CustomerPortal: React.FC = () => {
       const s = services.find((srv) => Number(srv.id) === Number(id));
       return total + (s ? Number(s.price) * qty : 0);
     }, 0);
+  };
+
+  const handlePayOrder = async (orderId: number | string) => {
+    try {
+      setPayingOrderId(Number(orderId));
+      const res = await createSnapPayment(orderId);
+      const token = res.data?.token;
+      if (!token) {
+        alert("Token pembayaran tidak ditemukan dari Midtrans");
+        return;
+      }
+      if (window.snap) {
+        window.snap.pay(token, {
+          onSuccess: (result: any) => {
+            console.log("Pembayaran Berhasil:", result);
+            alert("Pembayaran berhasil!");
+            loadData();
+          },
+          onPending: (result: any) => {
+            console.log("Pembayaran Pending:", result);
+            alert("Silakan selesaikan pembayaran Anda.");
+            loadData();
+          },
+          onError: (result: any) => {
+            console.error("Pembayaran Gagal:", result);
+            alert("Pembayaran gagal!");
+          },
+          onClose: () => {
+            console.log("Pop-up pembayaran ditutup oleh user.");
+          },
+        });
+      } else {
+        alert("Midtrans Snap belum siap. Silakan refresh halaman.");
+      }
+    } catch (err: any) {
+      console.error("Error creating payment:", err);
+      alert(err.response?.data?.message || "Gagal memproses pembayaran");
+    } finally {
+      setPayingOrderId(null);
+    }
   };
 
   const handleLogout = () => {
@@ -243,7 +325,9 @@ const CustomerPortal: React.FC = () => {
         brand: editVehicleForm.brand.trim(),
         model: editVehicleForm.model.trim(),
         color: editVehicleForm.color.trim() || undefined,
-        year: editVehicleForm.year ? parseInt(editVehicleForm.year, 10) : undefined,
+        year: editVehicleForm.year
+          ? parseInt(editVehicleForm.year, 10)
+          : undefined,
       });
       alert("Data kendaraan berhasil diperbarui");
       setEditingVehicle(null);
@@ -256,7 +340,8 @@ const CustomerPortal: React.FC = () => {
   };
 
   const handleDeleteVehicle = async (id: number | string) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus kendaraan ini?")) return;
+    if (!window.confirm("Apakah Anda yakin ingin menghapus kendaraan ini?"))
+      return;
     try {
       await deleteMyVehicle(id);
       const vList = await getMyVehicles();
@@ -296,10 +381,12 @@ const CustomerPortal: React.FC = () => {
       return;
     }
 
-    const servicePayload = Object.entries(selectedServices).map(([id, quantity]) => ({
-      serviceId: Number(id),
-      quantity,
-    }));
+    const servicePayload = Object.entries(selectedServices).map(
+      ([id, quantity]) => ({
+        serviceId: Number(id),
+        quantity,
+      }),
+    );
 
     if (servicePayload.length === 0) {
       alert("Pilih minimal satu layanan cuci");
@@ -341,12 +428,18 @@ const CustomerPortal: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-black flex items-center justify-center font-black text-white text-sm sm:text-base shadow-sm shrink-0">
-              {profile?.name ? profile.name.charAt(0).toUpperCase() : customerEmail ? customerEmail.charAt(0).toUpperCase() : "A"}
+              {profile?.name
+                ? profile.name.charAt(0).toUpperCase()
+                : customerEmail
+                  ? customerEmail.charAt(0).toUpperCase()
+                  : "A"}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 min-w-0">
                 <h1 className="font-black text-xs sm:text-base tracking-tight text-slate-900 truncate">
-                  {currentVehicle ? `${currentVehicle.brand} ${currentVehicle.model}` : "APEX Customer Studio"}
+                  {currentVehicle
+                    ? `${currentVehicle.brand} ${currentVehicle.model}`
+                    : "APEX Customer Studio"}
                 </h1>
                 <span className="hidden sm:inline-block text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
                   {currentVehicle?.plateNumber || "PORTAL"}
@@ -355,7 +448,9 @@ const CustomerPortal: React.FC = () => {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                  {currentOrder ? `Status: ${currentOrder.status}` : "Status: Siap Melayani"}
+                  {currentOrder
+                    ? `Status: ${currentOrder.status}`
+                    : "Status: Siap Melayani"}
                 </span>
               </div>
             </div>
@@ -367,7 +462,9 @@ const CustomerPortal: React.FC = () => {
               className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition shadow-sm cursor-pointer"
               title="Refresh Data"
             >
-              <HiOutlineRefresh className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin text-slate-900" : ""}`} />
+              <HiOutlineRefresh
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin text-slate-900" : ""}`}
+              />
             </button>
 
             {customerToken ? (
@@ -412,7 +509,9 @@ const CustomerPortal: React.FC = () => {
                       Kendaraan Terpilih
                     </span>
                     <h2 className="text-lg font-black text-slate-900 leading-tight">
-                      {currentVehicle ? `${currentVehicle.brand} ${currentVehicle.model}` : "Belum Ada Mobil"}
+                      {currentVehicle
+                        ? `${currentVehicle.brand} ${currentVehicle.model}`
+                        : "Belum Ada Mobil"}
                     </h2>
                   </div>
                   {currentVehicle && (
@@ -425,7 +524,11 @@ const CustomerPortal: React.FC = () => {
                 <div className="w-full relative flex items-center justify-between py-6 min-h-[220px]">
                   {vehicles.length > 1 && (
                     <button
-                      onClick={() => setSelectedVehicleIndex((prev) => (prev > 0 ? prev - 1 : vehicles.length - 1))}
+                      onClick={() =>
+                        setSelectedVehicleIndex((prev) =>
+                          prev > 0 ? prev - 1 : vehicles.length - 1,
+                        )
+                      }
                       className="z-20 w-10 h-10 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-black hover:bg-slate-50 transition cursor-pointer"
                       title="Mobil Sebelumnya"
                     >
@@ -436,19 +539,30 @@ const CustomerPortal: React.FC = () => {
                   <div className="flex-1 flex flex-col items-center justify-center px-4">
                     <img
                       src={getCarArtwork(currentVehicle)}
-                      alt={currentVehicle ? `${currentVehicle.brand} ${currentVehicle.model}` : "Sport Car"}
+                      alt={
+                        currentVehicle
+                          ? `${currentVehicle.brand} ${currentVehicle.model}`
+                          : "Sport Car"
+                      }
                       className="max-h-48 sm:max-h-56 w-auto object-contain transition-all duration-300 drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)]"
                     />
                     {currentVehicle && (
                       <p className="text-xs font-semibold text-slate-500 mt-3">
-                        {currentVehicle.color || "Metallic Finish"} {currentVehicle.year ? `• Model Tahun ${currentVehicle.year}` : ""}
+                        {currentVehicle.color || "Metallic Finish"}{" "}
+                        {currentVehicle.year
+                          ? `• Model Tahun ${currentVehicle.year}`
+                          : ""}
                       </p>
                     )}
                   </div>
 
                   {vehicles.length > 1 && (
                     <button
-                      onClick={() => setSelectedVehicleIndex((prev) => (prev < vehicles.length - 1 ? prev + 1 : 0))}
+                      onClick={() =>
+                        setSelectedVehicleIndex((prev) =>
+                          prev < vehicles.length - 1 ? prev + 1 : 0,
+                        )
+                      }
                       className="z-20 w-10 h-10 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-black hover:bg-slate-50 transition cursor-pointer"
                       title="Mobil Berikutnya"
                     >
@@ -465,7 +579,9 @@ const CustomerPortal: React.FC = () => {
                           key={idx}
                           onClick={() => setSelectedVehicleIndex(idx)}
                           className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                            selectedVehicleIndex === idx ? "w-8 bg-black shadow-sm" : "w-2.5 bg-slate-200 hover:bg-slate-300"
+                            selectedVehicleIndex === idx
+                              ? "w-8 bg-black shadow-sm"
+                              : "w-2.5 bg-slate-200 hover:bg-slate-300"
                           }`}
                           title={`Pilih Mobil ${idx + 1}`}
                         />
@@ -504,10 +620,10 @@ const CustomerPortal: React.FC = () => {
                           currentOrder?.status === "COMPLETED"
                             ? true
                             : currentOrder?.status === "IN_PROGRESS"
-                            ? step <= 4
-                            : currentOrder?.status === "WAITING"
-                            ? step <= 2
-                            : false;
+                              ? step <= 4
+                              : currentOrder?.status === "WAITING"
+                                ? step <= 2
+                                : false;
                         return (
                           <div
                             key={step}
@@ -534,16 +650,20 @@ const CustomerPortal: React.FC = () => {
                           {currentOrder?.status === "COMPLETED"
                             ? "0"
                             : currentOrder
-                            ? `${currentOrder.queueInfo?.estimatedMinutes || 25}`
-                            : "0"}
+                              ? `${currentOrder.queueInfo?.estimatedMinutes || 25}`
+                              : "0"}
                         </span>
-                        <span className="text-xs font-bold text-slate-500">Min</span>
+                        <span className="text-xs font-bold text-slate-500">
+                          Min
+                        </span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-700 font-bold mt-2">
                       <HiOutlineClock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{currentOrder ? "Estimasi Waktu" : "Siap Dicuci"}</span>
+                      <span>
+                        {currentOrder ? "Estimasi Waktu" : "Siap Dicuci"}
+                      </span>
                     </div>
                   </div>
 
@@ -554,14 +674,20 @@ const CustomerPortal: React.FC = () => {
                       </span>
                       <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-black text-slate-900">
-                          {currentOrder ? `#${currentOrder.queueInfo?.queuePosition || 1}` : "0"}
+                          {currentOrder
+                            ? `#${currentOrder.queueInfo?.queuePosition || 1}`
+                            : "0"}
                         </span>
-                        <span className="text-xs font-bold text-slate-500">Antre</span>
+                        <span className="text-xs font-bold text-slate-500">
+                          Antre
+                        </span>
                       </div>
                     </div>
 
                     <p className="text-[10px] text-slate-600 font-semibold mt-2">
-                      {currentOrder ? `${currentOrder.queueInfo?.ahead || 0} Mobil di Depan` : "Tanpa Antrean"}
+                      {currentOrder
+                        ? `${currentOrder.queueInfo?.ahead || 0} Mobil di Depan`
+                        : "Tanpa Antrean"}
                     </p>
                   </div>
 
@@ -586,7 +712,8 @@ const CustomerPortal: React.FC = () => {
                   <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                        <HiOutlineSparkles className="text-purple-600" /> Aktivitas Pengerjaan Berlangsung
+                        <HiOutlineSparkles className="text-purple-600" />{" "}
+                        Aktivitas Pengerjaan Berlangsung
                       </span>
                       {currentOrder.status === "WAITING" && (
                         <button
@@ -598,11 +725,47 @@ const CustomerPortal: React.FC = () => {
                       )}
                     </div>
                     <p className="text-sm font-black text-slate-900">
-                      Order #{currentOrder.id}: {currentOrder.orderItems?.map((i: any) => i.service?.name).join(", ") || "Paket Cuci"}
+                      Order #{currentOrder.id}:{" "}
+                      {currentOrder.orderItems
+                        ?.map((i: any) => i.service?.name)
+                        .join(", ") || "Paket Cuci"}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Total Tagihan: <span className="font-black text-slate-900">Rp {Number(currentOrder.totalPrice).toLocaleString("id-ID")}</span> • Status Pembayaran: <span className="font-bold text-slate-900">{currentOrder.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas"}</span>
-                    </p>
+
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-slate-500">
+                        Total Tagihan:{" "}
+                        <span className="font-black text-slate-900">
+                          Rp{" "}
+                          {Number(currentOrder.totalPrice).toLocaleString(
+                            "id-ID",
+                          )}
+                        </span>{" "}
+                        • Status:{" "}
+                        <span
+                          className={`font-bold ${
+                            currentOrder.paymentStatus === "PAID"
+                              ? "text-emerald-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {currentOrder.paymentStatus === "PAID"
+                            ? "Lunas"
+                            : "Belum Lunas"}
+                        </span>
+                      </p>
+
+                      {currentOrder.paymentStatus !== "PAID" && (
+                        <button
+                          onClick={() => handlePayOrder(currentOrder.id)}
+                          disabled={payingOrderId === Number(currentOrder.id)}
+                          className="bg-black hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition disabled:opacity-50"
+                        >
+                          {payingOrderId === Number(currentOrder.id)
+                            ? "Memproses..."
+                            : "💳 Bayar Sekarang"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -610,9 +773,12 @@ const CustomerPortal: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                        <FaSoap className="text-slate-800 text-xs" /> Katalog Paket Cuci Unggulan
+                        <FaSoap className="text-slate-800 text-xs" /> Katalog
+                        Paket Cuci Unggulan
                       </h3>
-                      <p className="text-xs text-slate-400">Pilih layanan perawatan bodi dan interior kendaraan Anda</p>
+                      <p className="text-xs text-slate-400">
+                        Pilih layanan perawatan bodi dan interior kendaraan Anda
+                      </p>
                     </div>
                     <button
                       onClick={() => setActiveTab("services")}
@@ -638,13 +804,18 @@ const CustomerPortal: React.FC = () => {
                         >
                           <div>
                             <p className="font-bold text-xs">{srv.name}</p>
-                            <p className={`text-[11px] mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
-                              Rp {Number(srv.price).toLocaleString("id-ID")} • {srv.duration || 30} Min
+                            <p
+                              className={`text-[11px] mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-500"}`}
+                            >
+                              Rp {Number(srv.price).toLocaleString("id-ID")} •{" "}
+                              {srv.duration || 30} Min
                             </p>
                           </div>
                           <span
                             className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold ${
-                              isSelected ? "bg-white text-slate-900 border-white" : "border-slate-300 text-transparent"
+                              isSelected
+                                ? "bg-white text-slate-900 border-white"
+                                : "border-slate-300 text-transparent"
                             }`}
                           >
                             ✓
@@ -663,11 +834,17 @@ const CustomerPortal: React.FC = () => {
           <div className="space-y-6 animate-fade-in-up">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/80">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Katalog Layanan Cuci &amp; Detailing</h2>
-                <p className="text-xs text-slate-500">Pilih satu atau beberapa layanan untuk antrean pencucian mobil Anda</p>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Katalog Layanan Cuci &amp; Detailing
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Pilih satu atau beberapa layanan untuk antrean pencucian mobil
+                  Anda
+                </p>
               </div>
               <div className="text-xs text-slate-500 font-bold">
-                Total Layanan: <span className="text-slate-900">{services.length} Paket</span>
+                Total Layanan:{" "}
+                <span className="text-slate-900">{services.length} Paket</span>
               </div>
             </div>
 
@@ -687,23 +864,33 @@ const CustomerPortal: React.FC = () => {
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <h3 className="font-black text-base leading-snug">{srv.name}</h3>
+                        <h3 className="font-black text-base leading-snug">
+                          {srv.name}
+                        </h3>
                         <div
                           className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 transition ${
-                            isSelected ? "bg-white text-slate-900 border-white" : "border-slate-300 text-transparent"
+                            isSelected
+                              ? "bg-white text-slate-900 border-white"
+                              : "border-slate-300 text-transparent"
                           }`}
                         >
                           ✓
                         </div>
                       </div>
-                      <p className={`text-xs leading-relaxed mb-4 ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
-                        {srv.description || "Perawatan komprehensif bodi dan interior mobil sport Anda."}
+                      <p
+                        className={`text-xs leading-relaxed mb-4 ${isSelected ? "text-slate-300" : "text-slate-500"}`}
+                      >
+                        {srv.description ||
+                          "Perawatan komprehensif bodi dan interior mobil sport Anda."}
                       </p>
                     </div>
 
                     <div className="pt-3 border-t border-slate-200/30 flex items-center justify-between text-xs">
-                      <span className={`flex items-center gap-1 font-semibold ${isSelected ? "text-slate-300" : "text-slate-500"}`}>
-                        <HiOutlineClock className="text-sm" /> {srv.duration || 30} Menit
+                      <span
+                        className={`flex items-center gap-1 font-semibold ${isSelected ? "text-slate-300" : "text-slate-500"}`}
+                      >
+                        <HiOutlineClock className="text-sm" />{" "}
+                        {srv.duration || 30} Menit
                       </span>
                       <span className="font-black text-sm">
                         Rp {Number(srv.price).toLocaleString("id-ID")}
@@ -720,8 +907,12 @@ const CustomerPortal: React.FC = () => {
           <div className="space-y-6 animate-fade-in-up">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Kendaraan Saya</h2>
-                <p className="text-xs text-slate-500">Kelola armada mobil sport yang terhubung dengan akun Anda</p>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Kendaraan Saya
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Kelola armada mobil sport yang terhubung dengan akun Anda
+                </p>
               </div>
               <button
                 onClick={() => setShowAddVehicleModal(true)}
@@ -735,9 +926,12 @@ const CustomerPortal: React.FC = () => {
             {vehicles.length === 0 ? (
               <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center text-slate-500 shadow-sm">
                 <FaCar className="text-4xl text-slate-300 mx-auto mb-3" />
-                <p className="font-black text-slate-900 text-lg">Belum Ada Kendaraan</p>
+                <p className="font-black text-slate-900 text-lg">
+                  Belum Ada Kendaraan
+                </p>
                 <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto mb-4">
-                  Daftarkan mobil sport pertama Anda untuk mulai melakukan booking dan pemantauan cuci realtime.
+                  Daftarkan mobil sport pertama Anda untuk mulai melakukan
+                  booking dan pemantauan cuci realtime.
                 </p>
                 <button
                   onClick={() => setShowAddVehicleModal(true)}
@@ -752,7 +946,9 @@ const CustomerPortal: React.FC = () => {
                   <div
                     key={v.id}
                     className={`bg-white rounded-3xl p-5 border transition shadow-sm flex flex-col justify-between ${
-                      selectedVehicleIndex === idx ? "border-black shadow-md ring-1 ring-black" : "border-slate-200/80 hover:border-slate-300"
+                      selectedVehicleIndex === idx
+                        ? "border-black shadow-md ring-1 ring-black"
+                        : "border-slate-200/80 hover:border-slate-300"
                     }`}
                   >
                     <div>
@@ -765,9 +961,16 @@ const CustomerPortal: React.FC = () => {
                       </div>
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-[10px] font-mono uppercase font-bold text-slate-400">{v.brand}</p>
-                          <h3 className="font-black text-base text-slate-900 leading-snug">{v.model}</h3>
-                          <p className="text-xs text-slate-500 mt-0.5">{v.color || "Metallic"} {v.year ? `• ${v.year}` : ""}</p>
+                          <p className="text-[10px] font-mono uppercase font-bold text-slate-400">
+                            {v.brand}
+                          </p>
+                          <h3 className="font-black text-base text-slate-900 leading-snug">
+                            {v.model}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {v.color || "Metallic"}{" "}
+                            {v.year ? `• ${v.year}` : ""}
+                          </p>
                         </div>
                         <span className="text-xs font-mono font-black bg-slate-100 text-slate-900 px-3 py-1 rounded-full border border-slate-200">
                           {v.plateNumber}
@@ -777,14 +980,19 @@ const CustomerPortal: React.FC = () => {
 
                     <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100 gap-2">
                       <button
-                        onClick={() => { setSelectedVehicleIndex(idx); setActiveTab("home"); }}
+                        onClick={() => {
+                          setSelectedVehicleIndex(idx);
+                          setActiveTab("home");
+                        }}
                         className={`text-xs px-3.5 py-2 rounded-full font-black transition cursor-pointer flex-1 text-center ${
                           selectedVehicleIndex === idx
                             ? "bg-black text-white shadow-sm"
                             : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                       >
-                        {selectedVehicleIndex === idx ? "Sedang Aktif" : "Pilih"}
+                        {selectedVehicleIndex === idx
+                          ? "Sedang Aktif"
+                          : "Pilih"}
                       </button>
 
                       <button
@@ -814,56 +1022,85 @@ const CustomerPortal: React.FC = () => {
           <div className="space-y-6 animate-fade-in-up">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-200/80">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Riwayat Pemesanan Cuci</h2>
-                <p className="text-xs text-slate-500">Semua pesanan yang telah selesai atau dibatalkan tercatat di sini</p>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Riwayat Pemesanan Cuci
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Semua pesanan yang telah selesai atau dibatalkan tercatat di
+                  sini
+                </p>
               </div>
               <div className="text-xs text-slate-500 font-bold">
-                Total Riwayat: <span className="text-slate-900">{orderHistory.length} Transaksi</span>
+                Total Riwayat:{" "}
+                <span className="text-slate-900">
+                  {orderHistory.length} Transaksi
+                </span>
               </div>
             </div>
 
             {orderHistory.length === 0 ? (
               <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center text-slate-500 shadow-sm">
                 <HiOutlineReceiptTax className="text-4xl text-slate-300 mx-auto mb-3" />
-                <p className="font-black text-slate-900 text-lg">Belum Ada Riwayat Transaksi</p>
+                <p className="font-black text-slate-900 text-lg">
+                  Belum Ada Riwayat Transaksi
+                </p>
                 <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  Pesanan yang selesai dikerjakan atau lunas akan otomatis muncul pada halaman ini.
+                  Pesanan yang selesai dikerjakan atau lunas akan otomatis
+                  muncul pada halaman ini.
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {orderHistory.map((order) => (
-                  <div key={order.id} className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                  <div
+                    key={order.id}
+                    className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex flex-col justify-between"
+                  >
                     <div>
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <span className="text-[10px] font-mono text-slate-400 block font-bold">
-                            #ORD-{String(order.id).padStart(3, "0")} • {new Date(order.createdAt).toLocaleDateString("id-ID")}
+                            #ORD-{String(order.id).padStart(3, "0")} •{" "}
+                            {new Date(order.createdAt).toLocaleDateString(
+                              "id-ID",
+                            )}
                           </span>
                           <h4 className="font-black text-base text-slate-900 mt-0.5">
-                            {order.vehicle ? `${order.vehicle.brand} ${order.vehicle.model}` : "Kendaraan"}
+                            {order.vehicle
+                              ? `${order.vehicle.brand} ${order.vehicle.model}`
+                              : "Kendaraan"}
                           </h4>
                           <span className="text-[11px] font-mono text-purple-700 font-bold">
                             {order.vehicle?.plateNumber}
                           </span>
                         </div>
-                        <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full border ${
-                          order.paymentStatus === "PAID"
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                            : "bg-amber-50 border-amber-200 text-amber-700"
-                        }`}>
-                          {order.paymentStatus === "PAID" ? "Lunas" : "Belum Lunas"}
+                        <span
+                          className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full border ${
+                            order.paymentStatus === "PAID"
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                              : "bg-amber-50 border-amber-200 text-amber-700"
+                          }`}
+                        >
+                          {order.paymentStatus === "PAID"
+                            ? "Lunas"
+                            : "Belum Lunas"}
                         </span>
                       </div>
 
                       <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl mb-3 text-xs text-slate-700">
-                        <span className="text-slate-400 font-medium">Layanan: </span>
-                        {order.orderItems?.map((i) => i.service?.name).join(", ") || "Layanan Cuci"}
+                        <span className="text-slate-400 font-medium">
+                          Layanan:{" "}
+                        </span>
+                        {order.orderItems
+                          ?.map((i) => i.service?.name)
+                          .join(", ") || "Layanan Cuci"}
                       </div>
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
-                      <span className="text-slate-400 font-bold">Total Pembayaran</span>
+                      <span className="text-slate-400 font-bold">
+                        Total Pembayaran
+                      </span>
                       <span className="font-black text-slate-900 text-base">
                         Rp {Number(order.totalPrice).toLocaleString("id-ID")}
                       </span>
@@ -882,9 +1119,16 @@ const CustomerPortal: React.FC = () => {
                 <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-center text-center relative">
                   <div className="relative mb-4">
                     <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-900 text-white flex items-center justify-center font-black text-4xl sm:text-5xl shadow-lg border-4 border-white ring-1 ring-slate-200">
-                      {profile?.name ? profile.name.charAt(0).toUpperCase() : customerEmail ? customerEmail.charAt(0).toUpperCase() : "A"}
+                      {profile?.name
+                        ? profile.name.charAt(0).toUpperCase()
+                        : customerEmail
+                          ? customerEmail.charAt(0).toUpperCase()
+                          : "A"}
                     </div>
-                    <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm" title="Online / Aktif">
+                    <div
+                      className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm"
+                      title="Online / Aktif"
+                    >
                       <span className="w-2 h-2 rounded-full bg-white" />
                     </div>
                   </div>
@@ -904,28 +1148,45 @@ const CustomerPortal: React.FC = () => {
 
                   <div className="w-full pt-5 mt-6 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                     <span>ID Pengguna:</span>
-                    <span className="font-mono font-bold text-slate-900">#CUST-{String(profile?.id || 1).padStart(4, "0")}</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      #CUST-{String(profile?.id || 1).padStart(4, "0")}
+                    </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-sm flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Cuci Selesai</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Total Cuci Selesai
+                    </span>
                     <div className="my-2">
-                      <span className="text-2xl font-black text-slate-900">{profile?.stats?.completedOrders || 0}</span>
-                      <span className="text-xs font-bold text-slate-500 ml-1">Kunjungan</span>
+                      <span className="text-2xl font-black text-slate-900">
+                        {profile?.stats?.completedOrders || 0}
+                      </span>
+                      <span className="text-xs font-bold text-slate-500 ml-1">
+                        Kunjungan
+                      </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-semibold">Transaksi Terverifikasi</p>
+                    <p className="text-[10px] text-slate-500 font-semibold">
+                      Transaksi Terverifikasi
+                    </p>
                   </div>
 
                   <div className="bg-white border border-slate-200/80 rounded-3xl p-4 shadow-sm flex flex-col justify-between">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Pengeluaran</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Total Pengeluaran
+                    </span>
                     <div className="my-2">
                       <span className="text-lg font-black text-slate-900 truncate block">
-                        Rp {Number(profile?.stats?.totalSpent || 0).toLocaleString("id-ID")}
+                        Rp{" "}
+                        {Number(profile?.stats?.totalSpent || 0).toLocaleString(
+                          "id-ID",
+                        )}
                       </span>
                     </div>
-                    <p className="text-[10px] text-emerald-600 font-bold">Status: Lunas</p>
+                    <p className="text-[10px] text-emerald-600 font-bold">
+                      Status: Lunas
+                    </p>
                   </div>
                 </div>
               </div>
@@ -934,20 +1195,29 @@ const CustomerPortal: React.FC = () => {
                 <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
                     <div>
-                      <h3 className="text-lg font-black text-slate-900">Informasi Personal Akun</h3>
-                      <p className="text-xs text-slate-400">Data identitas member terdaftar pada sistem APEX</p>
+                      <h3 className="text-lg font-black text-slate-900">
+                        Informasi Personal Akun
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Data identitas member terdaftar pada sistem APEX
+                      </p>
                     </div>
                     <button
                       onClick={() => setIsEditingProfile(!isEditingProfile)}
                       className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full border border-slate-200 hover:border-black hover:bg-slate-50 transition cursor-pointer"
                     >
                       <HiOutlinePencilAlt className="w-4 h-4" />
-                      <span>{isEditingProfile ? "Batal Edit" : "Edit Profil"}</span>
+                      <span>
+                        {isEditingProfile ? "Batal Edit" : "Edit Profil"}
+                      </span>
                     </button>
                   </div>
 
                   {isEditingProfile ? (
-                    <form onSubmit={handleUpdateProfileSubmit} className="space-y-4">
+                    <form
+                      onSubmit={handleUpdateProfileSubmit}
+                      className="space-y-4"
+                    >
                       <div>
                         <label className="text-xs font-bold text-slate-700 block mb-1">
                           Nama Lengkap <span className="text-rose-500">*</span>
@@ -955,7 +1225,12 @@ const CustomerPortal: React.FC = () => {
                         <input
                           type="text"
                           value={profileForm.name}
-                          onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                          onChange={(e) =>
+                            setProfileForm({
+                              ...profileForm,
+                              name: e.target.value,
+                            })
+                          }
                           className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs font-bold rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                           required
                         />
@@ -963,12 +1238,18 @@ const CustomerPortal: React.FC = () => {
 
                       <div>
                         <label className="text-xs font-bold text-slate-700 block mb-1">
-                          Nomor WhatsApp / Telepon <span className="text-rose-500">*</span>
+                          Nomor WhatsApp / Telepon{" "}
+                          <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
                           value={profileForm.phone}
-                          onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                          onChange={(e) =>
+                            setProfileForm({
+                              ...profileForm,
+                              phone: e.target.value,
+                            })
+                          }
                           className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs font-mono font-bold rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                           required
                         />
@@ -999,7 +1280,9 @@ const CustomerPortal: React.FC = () => {
                           disabled={isSavingProfile}
                           className="px-5 py-2.5 bg-black hover:bg-neutral-800 text-white font-bold text-xs rounded-full transition shadow-md cursor-pointer disabled:opacity-50"
                         >
-                          {isSavingProfile ? "Menyimpan..." : "Simpan Perubahan"}
+                          {isSavingProfile
+                            ? "Menyimpan..."
+                            : "Simpan Perubahan"}
                         </button>
                       </div>
                     </form>
@@ -1013,7 +1296,9 @@ const CustomerPortal: React.FC = () => {
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
                             Nama Lengkap
                           </span>
-                          <span className="text-sm font-black text-slate-900">{profile?.name || "-"}</span>
+                          <span className="text-sm font-black text-slate-900">
+                            {profile?.name || "-"}
+                          </span>
                         </div>
                       </div>
 
@@ -1025,7 +1310,9 @@ const CustomerPortal: React.FC = () => {
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
                             Email Terdaftar
                           </span>
-                          <span className="text-sm font-black text-slate-900 truncate block">{profile?.email || customerEmail}</span>
+                          <span className="text-sm font-black text-slate-900 truncate block">
+                            {profile?.email || customerEmail}
+                          </span>
                         </div>
                       </div>
 
@@ -1037,7 +1324,9 @@ const CustomerPortal: React.FC = () => {
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
                             Nomor WhatsApp
                           </span>
-                          <span className="text-sm font-mono font-black text-slate-900">{profile?.phone || "-"}</span>
+                          <span className="text-sm font-mono font-black text-slate-900">
+                            {profile?.phone || "-"}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1047,8 +1336,12 @@ const CustomerPortal: React.FC = () => {
                 <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                     <div>
-                      <h3 className="text-lg font-black text-slate-900">Garasi Kendaraan Saya</h3>
-                      <p className="text-xs text-slate-400">Total {vehicles.length} mobil sport terdaftar</p>
+                      <h3 className="text-lg font-black text-slate-900">
+                        Garasi Kendaraan Saya
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Total {vehicles.length} mobil sport terdaftar
+                      </p>
                     </div>
                     <button
                       onClick={() => setShowAddVehicleModal(true)}
@@ -1060,7 +1353,9 @@ const CustomerPortal: React.FC = () => {
                   </div>
 
                   {vehicles.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-6">Belum ada mobil di garasi Anda</p>
+                    <p className="text-xs text-slate-400 text-center py-6">
+                      Belum ada mobil di garasi Anda
+                    </p>
                   ) : (
                     <div className="space-y-3">
                       {vehicles.map((v) => (
@@ -1082,7 +1377,8 @@ const CustomerPortal: React.FC = () => {
                                 {v.plateNumber}
                               </p>
                               <p className="text-[10px] text-slate-400">
-                                {v.color || "Metallic"} {v.year ? `• ${v.year}` : ""}
+                                {v.color || "Metallic"}{" "}
+                                {v.year ? `• ${v.year}` : ""}
                               </p>
                             </div>
                           </div>
@@ -1148,7 +1444,9 @@ const CustomerPortal: React.FC = () => {
             }`}
           >
             <FaCar className="text-xs sm:text-sm" />
-            <span className="text-[9px] sm:text-xs font-bold tracking-tight">Home</span>
+            <span className="text-[9px] sm:text-xs font-bold tracking-tight">
+              Home
+            </span>
           </button>
 
           <button
@@ -1160,7 +1458,9 @@ const CustomerPortal: React.FC = () => {
             }`}
           >
             <FaSoap className="text-xs sm:text-sm" />
-            <span className="text-[9px] sm:text-xs font-bold tracking-tight">Layanan</span>
+            <span className="text-[9px] sm:text-xs font-bold tracking-tight">
+              Layanan
+            </span>
           </button>
 
           <button
@@ -1172,7 +1472,9 @@ const CustomerPortal: React.FC = () => {
             }`}
           >
             <HiOutlineTruck className="text-xs sm:text-sm" />
-            <span className="text-[9px] sm:text-xs font-bold tracking-tight">Mobil</span>
+            <span className="text-[9px] sm:text-xs font-bold tracking-tight">
+              Mobil
+            </span>
           </button>
 
           <button
@@ -1184,7 +1486,9 @@ const CustomerPortal: React.FC = () => {
             }`}
           >
             <HiOutlineReceiptTax className="text-xs sm:text-sm" />
-            <span className="text-[9px] sm:text-xs font-bold tracking-tight">Riwayat</span>
+            <span className="text-[9px] sm:text-xs font-bold tracking-tight">
+              Riwayat
+            </span>
           </button>
 
           <button
@@ -1196,7 +1500,9 @@ const CustomerPortal: React.FC = () => {
             }`}
           >
             <HiOutlineUser className="text-xs sm:text-sm" />
-            <span className="text-[9px] sm:text-xs font-bold tracking-tight">Profil</span>
+            <span className="text-[9px] sm:text-xs font-bold tracking-tight">
+              Profil
+            </span>
           </button>
         </nav>
       </div>
@@ -1206,8 +1512,12 @@ const CustomerPortal: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 relative">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-slate-900">Tambah Mobil Baru</h3>
-                <p className="text-xs text-slate-400">Daftarkan mobil sport Anda untuk pemesanan cuci</p>
+                <h3 className="text-lg font-black text-slate-900">
+                  Tambah Mobil Baru
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Daftarkan mobil sport Anda untuk pemesanan cuci
+                </p>
               </div>
               <button
                 onClick={() => setShowAddVehicleModal(false)}
@@ -1226,7 +1536,12 @@ const CustomerPortal: React.FC = () => {
                   type="text"
                   placeholder="Contoh: B 911 RS"
                   value={newVehicleForm.plateNumber}
-                  onChange={(e) => setNewVehicleForm({ ...newVehicleForm, plateNumber: e.target.value })}
+                  onChange={(e) =>
+                    setNewVehicleForm({
+                      ...newVehicleForm,
+                      plateNumber: e.target.value,
+                    })
+                  }
                   className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs font-mono font-bold rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition uppercase"
                   required
                 />
@@ -1241,7 +1556,12 @@ const CustomerPortal: React.FC = () => {
                     type="text"
                     placeholder="Porsche / Ferrari"
                     value={newVehicleForm.brand}
-                    onChange={(e) => setNewVehicleForm({ ...newVehicleForm, brand: e.target.value })}
+                    onChange={(e) =>
+                      setNewVehicleForm({
+                        ...newVehicleForm,
+                        brand: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                     required
                   />
@@ -1254,7 +1574,12 @@ const CustomerPortal: React.FC = () => {
                     type="text"
                     placeholder="911 GT3 RS / SF90"
                     value={newVehicleForm.model}
-                    onChange={(e) => setNewVehicleForm({ ...newVehicleForm, model: e.target.value })}
+                    onChange={(e) =>
+                      setNewVehicleForm({
+                        ...newVehicleForm,
+                        model: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                     required
                   />
@@ -1262,12 +1587,19 @@ const CustomerPortal: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Warna Kendaraan</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Warna Kendaraan
+                </label>
                 <input
                   type="text"
                   placeholder="Contoh: GT Silver Metallic / Rosso Corsa"
                   value={newVehicleForm.color}
-                  onChange={(e) => setNewVehicleForm({ ...newVehicleForm, color: e.target.value })}
+                  onChange={(e) =>
+                    setNewVehicleForm({
+                      ...newVehicleForm,
+                      color: e.target.value,
+                    })
+                  }
                   className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                 />
               </div>
@@ -1297,8 +1629,12 @@ const CustomerPortal: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 relative">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-slate-900">Edit Data Mobil</h3>
-                <p className="text-xs text-slate-400">Perbarui informasi spesifikasi mobil Anda</p>
+                <h3 className="text-lg font-black text-slate-900">
+                  Edit Data Mobil
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Perbarui informasi spesifikasi mobil Anda
+                </p>
               </div>
               <button
                 onClick={() => setEditingVehicle(null)}
@@ -1316,7 +1652,12 @@ const CustomerPortal: React.FC = () => {
                 <input
                   type="text"
                   value={editVehicleForm.plateNumber}
-                  onChange={(e) => setEditVehicleForm({ ...editVehicleForm, plateNumber: e.target.value })}
+                  onChange={(e) =>
+                    setEditVehicleForm({
+                      ...editVehicleForm,
+                      plateNumber: e.target.value,
+                    })
+                  }
                   className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs font-mono font-bold rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition uppercase"
                   required
                 />
@@ -1330,7 +1671,12 @@ const CustomerPortal: React.FC = () => {
                   <input
                     type="text"
                     value={editVehicleForm.brand}
-                    onChange={(e) => setEditVehicleForm({ ...editVehicleForm, brand: e.target.value })}
+                    onChange={(e) =>
+                      setEditVehicleForm({
+                        ...editVehicleForm,
+                        brand: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                     required
                   />
@@ -1342,7 +1688,12 @@ const CustomerPortal: React.FC = () => {
                   <input
                     type="text"
                     value={editVehicleForm.model}
-                    onChange={(e) => setEditVehicleForm({ ...editVehicleForm, model: e.target.value })}
+                    onChange={(e) =>
+                      setEditVehicleForm({
+                        ...editVehicleForm,
+                        model: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                     required
                   />
@@ -1351,20 +1702,34 @@ const CustomerPortal: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Warna</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Warna
+                  </label>
                   <input
                     type="text"
                     value={editVehicleForm.color}
-                    onChange={(e) => setEditVehicleForm({ ...editVehicleForm, color: e.target.value })}
+                    onChange={(e) =>
+                      setEditVehicleForm({
+                        ...editVehicleForm,
+                        color: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Tahun</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Tahun
+                  </label>
                   <input
                     type="number"
                     value={editVehicleForm.year}
-                    onChange={(e) => setEditVehicleForm({ ...editVehicleForm, year: e.target.value })}
+                    onChange={(e) =>
+                      setEditVehicleForm({
+                        ...editVehicleForm,
+                        year: e.target.value,
+                      })
+                    }
                     className="w-full bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs rounded-2xl p-3 focus:bg-white focus:border-black outline-none transition"
                   />
                 </div>

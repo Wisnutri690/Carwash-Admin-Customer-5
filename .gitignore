@@ -1,8 +1,35 @@
-﻿node_modules/
+# Dependencies
+node_modules/
 */node_modules/
+
+# Environment Variables
 .env
 */.env
+*.env.local
+
+# Build Outputs
 dist/
 */dist/
-.DS_Store
+build/
+*/build/
+
+# Logs & Runtime
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE & AI Assistant Files
+.vscode/
+.idea/
+.agents/
+.gemini/
+rules/
+
+# Temporary & Cache
+.cache/
+*.tmp

@@ -118,7 +118,7 @@ export const getAllOrders = async () => {
       },
     },
     orderBy: {
-      id: "asc",
+      createdAt: "desc",
     },
   });
 };

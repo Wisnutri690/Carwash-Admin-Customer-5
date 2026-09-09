@@ -9,7 +9,7 @@ import {
   HiOutlineUserGroup
 } from "react-icons/hi";
 import { getCustomer } from "../../services/customerService";
-import { getOrders, updateOrderStatus, updateOrderPayment } from "../../services/orderService";
+import { getOrders, updateOrderStatus, updateOrderPayment, updateOrder } from "../../services/orderService";
 import { getStaffs } from "../../services/staffService";
 import type { Customer } from "../../types/customer";
 import type { Order, OrderStatus } from "../../types/order";
@@ -23,6 +23,9 @@ const Dashboard: React.FC = () => {
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTabFilter, setActiveTabFilter] = useState<"ALL" | "ACTIVE" | "COMPLETED">("ALL");
+  const [assignStaffTargetOrder, setAssignStaffTargetOrder] = useState<Order | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<number | string>("");
+  const [isAssigningStaff, setIsAssigningStaff] = useState<boolean>(false);
 
   const adminDataString = localStorage.getItem("admin");
   const admin = adminDataString ? JSON.parse(adminDataString) : { name: "Admin APEX", email: "admin@apexcarwash.com" };
@@ -90,6 +93,33 @@ const Dashboard: React.FC = () => {
       fetchDashboardData();
     } catch (err: any) {
       alert(err.response?.data?.message || "Gagal memproses pembayaran");
+    }
+  };
+
+  const handleOpenAssignStaff = (order: Order) => {
+    setAssignStaffTargetOrder(order);
+    setSelectedStaffId(order.staffId || "");
+  };
+
+  const handleAssignStaffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignStaffTargetOrder) return;
+    if (!selectedStaffId) {
+      alert("Silakan pilih staf yang bertugas");
+      return;
+    }
+
+    setIsAssigningStaff(true);
+    try {
+      await updateOrder(assignStaffTargetOrder.id, {
+        staffId: Number(selectedStaffId),
+      });
+      setAssignStaffTargetOrder(null);
+      fetchDashboardData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Gagal menugaskan staf");
+    } finally {
+      setIsAssigningStaff(false);
     }
   };
 
@@ -295,6 +325,17 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap sm:flex-col items-end gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                      {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                        <button
+                          onClick={() => handleOpenAssignStaff(order)}
+                          className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-full border border-slate-200 transition flex items-center gap-1 cursor-pointer"
+                          title="Tugaskan / Ganti Staf Cuci"
+                        >
+                          <HiOutlineUserGroup className="w-3.5 h-3.5 text-slate-600" />
+                          <span>{order.staffId ? "Ganti Staf" : "Pilih Staf"}</span>
+                        </button>
+                      )}
+
                       {order.status === "WAITING" && (
                         <button
                           onClick={() => handleAdvanceStatus(order.id, "IN_PROGRESS")}
@@ -381,6 +422,113 @@ const Dashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Modal Popup Pilih Staff */}
+      {assignStaffTargetOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Tugaskan Petugas Cuci
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Order #ORD-{String(assignStaffTargetOrder.id).padStart(3, "0")} • {assignStaffTargetOrder.vehicle?.brand} {assignStaffTargetOrder.vehicle?.model} ({assignStaffTargetOrder.vehicle?.plateNumber})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignStaffTargetOrder(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignStaffSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-2">
+                  Daftar Petugas (Aktif &amp; Tidak Aktif):
+                </label>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {staffs.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic py-4 text-center">Tidak ada data staf terdaftar.</p>
+                  ) : (
+                    staffs.map((staff) => {
+                      const isSelected = String(selectedStaffId) === String(staff.id);
+                      return (
+                        <div
+                          key={staff.id}
+                          onClick={() => {
+                            if (staff.isActive) {
+                              setSelectedStaffId(staff.id);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-2xl border transition ${
+                            !staff.isActive
+                              ? "opacity-60 bg-slate-50 border-slate-200 cursor-not-allowed"
+                              : isSelected
+                              ? "border-slate-900 bg-slate-900 text-white cursor-pointer shadow-sm"
+                              : "border-slate-200 hover:border-slate-300 bg-white cursor-pointer"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="staffOption"
+                              checked={isSelected}
+                              disabled={!staff.isActive}
+                              onChange={() => setSelectedStaffId(staff.id)}
+                              className="accent-slate-900 cursor-pointer"
+                            />
+                            <div>
+                              <p className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                                {staff.name}
+                              </p>
+                              <p className={`text-[10px] ${isSelected ? "text-slate-300" : "text-slate-400"}`}>
+                                {staff.phone || "Teknisi Cuci"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                              staff.isActive
+                                ? isSelected
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-emerald-100 text-emerald-700"
+                                : "bg-rose-100 text-rose-700"
+                            }`}
+                          >
+                            {staff.isActive ? "🟢 Aktif" : "🔴 Tidak Aktif"}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAssignStaffTargetOrder(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-full transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigningStaff || !selectedStaffId}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
+                >
+                  {isAssigningStaff ? "Menyimpan..." : "Tugaskan Staf"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

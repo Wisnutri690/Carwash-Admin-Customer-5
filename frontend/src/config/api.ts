@@ -8,8 +8,19 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+    const url = config.url || "";
+    const isCustomerEndpoint =
+      url.startsWith("/customer") ||
+      url.startsWith("customer") ||
+      url.startsWith("/payments/snap") ||
+      url.startsWith("payments/snap");
 
-    const token = localStorage.getItem("token");
+    const customerToken = localStorage.getItem("customerToken");
+    const adminToken = localStorage.getItem("token");
+
+    const token = isCustomerEndpoint
+      ? (customerToken || adminToken)
+      : (adminToken || customerToken);
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;

@@ -9,10 +9,11 @@ import {
   HiOutlineX,
   HiOutlineExclamationCircle,
   HiOutlineArrowLeft,
-  HiOutlinePrinter
+  HiOutlinePrinter,
+  HiOutlineUserGroup
 } from "react-icons/hi";
 import {
-  getOrders, createOrder, updateOrderStatus, updateOrderPayment, deleteOrder
+  getOrders, createOrder, updateOrderStatus, updateOrderPayment, deleteOrder, updateOrder
 } from "../../services/orderService";
 import { getCustomer } from "../../services/customerService";
 import { getVehicles } from "../../services/vehicleService";
@@ -51,6 +52,10 @@ const OrderList: React.FC = () => {
 
   const [deleteTargetOrder, setDeleteTargetOrder] = useState<Order | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [assignStaffTargetOrder, setAssignStaffTargetOrder] = useState<Order | null>(null);
+  const [assignStaffSelectedId, setAssignStaffSelectedId] = useState<string | number>("");
+  const [isAssigningStaff, setIsAssigningStaff] = useState(false);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | number>("");
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | number>("");
@@ -236,6 +241,35 @@ const OrderList: React.FC = () => {
       alert(`Gagal: ${detailMsg}`);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleOpenAssignStaff = (order: Order) => {
+    setAssignStaffTargetOrder(order);
+    setAssignStaffSelectedId(order.staffId || "");
+  };
+
+  const handleAssignStaffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignStaffTargetOrder) return;
+    if (!assignStaffSelectedId) {
+      alert("Silakan pilih staf teknisi yang bertugas.");
+      return;
+    }
+
+    setIsAssigningStaff(true);
+    try {
+      await updateOrder(assignStaffTargetOrder.id, {
+        staffId: Number(assignStaffSelectedId),
+      });
+      setAssignStaffTargetOrder(null);
+      await fetchAllData();
+    } catch (error: any) {
+      const errData = error.response?.data;
+      const detailMsg = errData?.message || error.message || "Gagal menugaskan staf";
+      alert(`Gagal: ${detailMsg}`);
+    } finally {
+      setIsAssigningStaff(false);
     }
   };
 
@@ -458,6 +492,16 @@ const OrderList: React.FC = () => {
 
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100">
                   <div className="flex items-center gap-1.5">
+                    {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                      <button
+                        onClick={() => handleOpenAssignStaff(order)}
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-full border border-slate-200 transition flex items-center gap-1 cursor-pointer"
+                        title="Tugaskan / Ganti Staf Cuci"
+                      >
+                        <HiOutlineUserGroup className="w-3.5 h-3.5 text-slate-600" />
+                        <span>{order.staffId ? "Ganti Staf" : "Pilih Staf"}</span>
+                      </button>
+                    )}
                     {order.status === "WAITING" && (
                       <button
                         onClick={() => handleStatusChange(order.id, "IN_PROGRESS")}
@@ -557,6 +601,15 @@ const OrderList: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
+                            <button
+                              onClick={() => handleOpenAssignStaff(order)}
+                              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] rounded-full border border-slate-200 cursor-pointer"
+                              title="Tugaskan / Ganti Staf Cuci"
+                            >
+                              {order.staffId ? "Ganti Staf" : "Pilih Staf"}
+                            </button>
+                          )}
                           {order.status === "WAITING" && (
                             <button
                               onClick={() => handleStatusChange(order.id, "IN_PROGRESS")}
@@ -884,6 +937,113 @@ const OrderList: React.FC = () => {
                 {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Popup Pilih Staff */}
+      {assignStaffTargetOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Tugaskan Petugas Cuci
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Order #ORD-{String(assignStaffTargetOrder.id).padStart(3, "0")} • {assignStaffTargetOrder.vehicle?.brand} {assignStaffTargetOrder.vehicle?.model} ({assignStaffTargetOrder.vehicle?.plateNumber})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignStaffTargetOrder(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignStaffSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-2">
+                  Daftar Petugas (Aktif &amp; Tidak Aktif):
+                </label>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {staffs.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic py-4 text-center">Tidak ada data staf terdaftar.</p>
+                  ) : (
+                    staffs.map((staff) => {
+                      const isSelected = String(assignStaffSelectedId) === String(staff.id);
+                      return (
+                        <div
+                          key={staff.id}
+                          onClick={() => {
+                            if (staff.isActive) {
+                              setAssignStaffSelectedId(staff.id);
+                            }
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-2xl border transition ${
+                            !staff.isActive
+                              ? "opacity-60 bg-slate-50 border-slate-200 cursor-not-allowed"
+                              : isSelected
+                              ? "border-slate-900 bg-slate-900 text-white cursor-pointer shadow-sm"
+                              : "border-slate-200 hover:border-slate-300 bg-white cursor-pointer"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="staffOptionOrderList"
+                              checked={isSelected}
+                              disabled={!staff.isActive}
+                              onChange={() => setAssignStaffSelectedId(staff.id)}
+                              className="accent-slate-900 cursor-pointer"
+                            />
+                            <div>
+                              <p className={`text-xs font-bold ${isSelected ? "text-white" : "text-slate-900"}`}>
+                                {staff.name}
+                              </p>
+                              <p className={`text-[10px] ${isSelected ? "text-slate-300" : "text-slate-400"}`}>
+                                {staff.phone || "Teknisi Cuci"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                              staff.isActive
+                                ? isSelected
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-emerald-100 text-emerald-700"
+                                : "bg-rose-100 text-rose-700"
+                            }`}
+                          >
+                            {staff.isActive ? "🟢 Aktif" : "🔴 Tidak Aktif"}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAssignStaffTargetOrder(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-full transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigningStaff || !assignStaffSelectedId}
+                  className="px-5 py-2 bg-slate-900 hover:bg-black disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
+                >
+                  {isAssigningStaff ? "Menyimpan..." : "Tugaskan Staf"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

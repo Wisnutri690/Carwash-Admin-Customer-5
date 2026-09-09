@@ -15,7 +15,7 @@ export const initSocket = (server: HttpServer): SocketIOServer => {
     console.log(`⚡ [Socket.IO] Client connected: ${socket.id}`);
 
     socket.on("disconnect", () => {
-      console.log(`❌ [Socket.IO] Client disconnected: ${socket.id}`);
+      console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
     });
   });
 
@@ -31,7 +31,7 @@ export const getIO = (): SocketIOServer => {
 
 export const emitOrderStatusUpdated = (order: any) => {
   if (io) {
-    console.log(`📢 [Socket.IO Broadcast] ORDER_STATUS_UPDATED for Order #${order?.id || "N/A"}`);
+    console.log(`[Socket.IO Broadcast] ORDER_STATUS_UPDATED for Order #${order?.id || "N/A"}`);
     io.emit("ORDER_STATUS_UPDATED", order);
   }
 };

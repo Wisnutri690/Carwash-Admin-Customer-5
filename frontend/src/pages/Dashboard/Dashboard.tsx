@@ -6,10 +6,7 @@ import {
   HiOutlineUsers,
   HiOutlineClock,
   HiOutlineRefresh,
-  HiOutlineUserGroup,
-  HiOutlineChartBar,
-  HiOutlineExternalLink,
-  HiOutlineCalendar
+  HiOutlineUserGroup
 } from "react-icons/hi";
 import { getCustomer } from "../../services/customerService";
 import { getOrders, updateOrderStatus, updateOrderPayment, updateOrder } from "../../services/orderService";
@@ -30,10 +27,8 @@ const Dashboard: React.FC = () => {
   const [selectedStaffId, setSelectedStaffId] = useState<number | string>("");
   const [isAssigningStaff, setIsAssigningStaff] = useState<boolean>(false);
 
-  // State Rekap Pendapatan (Hari Ini, Bulan Ini, Tahun Ini, Total)
-  const [revenuePeriod, setRevenuePeriod] = useState<"TODAY" | "MONTH" | "YEAR" | "ALL">("TODAY");
-  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState<boolean>(false);
-  const [modalTransactionFilter, setModalTransactionFilter] = useState<"TODAY" | "MONTH" | "YEAR" | "ALL">("TODAY");
+  // Filter Periode Pendapatan: Hari Ini | Bulan Ini | Tahun Ini
+  const [revenuePeriod, setRevenuePeriod] = useState<"TODAY" | "MONTH" | "YEAR">("TODAY");
 
   const adminDataString = localStorage.getItem("admin");
   const admin = adminDataString ? JSON.parse(adminDataString) : { name: "Admin APEX", email: "admin@apexcarwash.com" };
@@ -72,7 +67,7 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  // --- PERHITUNGAN REKAP PENDAPATAN (HARI INI, BULAN INI, TAHUN INI, TOTAL) ---
+  // --- PERHITUNGAN REKAP PENDAPATAN (HARI INI, BULAN INI, TAHUN INI) ---
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -110,82 +105,27 @@ const Dashboard: React.FC = () => {
   });
   const thisYearRevenue = thisYearPaidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // 4. Total Keseluruhan
-  const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
-
-  // Nominal & Label yang aktif di kartu metrik Dashboard
+  // Nominal & Label yang aktif sesuai tab di kartu
   const displayedRevenue =
     revenuePeriod === "TODAY"
       ? todayRevenue
       : revenuePeriod === "MONTH"
       ? thisMonthRevenue
-      : revenuePeriod === "YEAR"
-      ? thisYearRevenue
-      : totalRevenue;
+      : thisYearRevenue;
 
   const displayedCount =
     revenuePeriod === "TODAY"
       ? todayPaidOrders.length
       : revenuePeriod === "MONTH"
       ? thisMonthPaidOrders.length
-      : revenuePeriod === "YEAR"
-      ? thisYearPaidOrders.length
-      : paidOrders.length;
+      : thisYearPaidOrders.length;
 
   const displayedLabel =
     revenuePeriod === "TODAY"
       ? "Hari Ini"
       : revenuePeriod === "MONTH"
       ? "Bulan Ini"
-      : revenuePeriod === "YEAR"
-      ? `Tahun ${currentYear}`
-      : "Total Keseluruhan";
-
-  // Data transaksi untuk Modal Rekap berdasarkan tab yang dipilih
-  const modalFilteredOrders =
-    modalTransactionFilter === "TODAY"
-      ? todayPaidOrders
-      : modalTransactionFilter === "MONTH"
-      ? thisMonthPaidOrders
-      : modalTransactionFilter === "YEAR"
-      ? thisYearPaidOrders
-      : paidOrders;
-
-  // Rekap per bulan (12 bulan dalam tahun aktif) untuk visual breakdown
-  const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
-  ];
-  const monthlyBreakdown = monthNames.map((name, idx) => {
-    const monthOrders = thisYearPaidOrders.filter((o) => {
-      const d = new Date(o.createdAt);
-      return d.getMonth() === idx;
-    });
-    const rev = monthOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
-    return {
-      monthName: name,
-      revenue: rev,
-      count: monthOrders.length,
-    };
-  });
-  const maxMonthRev = Math.max(...monthlyBreakdown.map((m) => m.revenue), 1);
-
-  const formatOrderDate = (dateStr?: string) => {
-    if (!dateStr) return "-";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return "-";
-      return new Intl.DateTimeFormat("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(d);
-    } catch {
-      return dateStr;
-    }
-  };
+      : `Tahun ${currentYear}`;
 
   const waitingOrders = orders.filter((o) => o.status === "WAITING");
   const inProgressOrders = orders.filter((o) => o.status === "IN_PROGRESS");
@@ -313,39 +253,34 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div
-          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition flex flex-col justify-between group"
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition flex flex-col justify-between"
         >
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pendapatan Lunas</span>
-              <div className="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                <HiOutlineCurrencyDollar className="w-4 h-4" />
+              {/* Tab Switcher: Hari Ini | Bulan | Tahun */}
+              <div className="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl">
+                {(
+                  [
+                    { id: "TODAY", label: "Hari Ini" },
+                    { id: "MONTH", label: "Bulan" },
+                    { id: "YEAR", label: "Tahun" },
+                  ] as const
+                ).map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setRevenuePeriod(p.id)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                      revenuePeriod === p.id
+                        ? "bg-white text-emerald-700 shadow-xs"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
-            </div>
-
-            {/* Quick Switcher Filter Periode (Hari Ini, Bulan, Tahun, Total) */}
-            <div className="flex items-center gap-1 mb-3 bg-slate-100/90 p-1 rounded-2xl">
-              {(
-                [
-                  { id: "TODAY", label: "Hari Ini" },
-                  { id: "MONTH", label: "Bulan" },
-                  { id: "YEAR", label: "Tahun" },
-                  { id: "ALL", label: "Total" },
-                ] as const
-              ).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setRevenuePeriod(p.id)}
-                  className={`flex-1 py-1 text-[10px] font-bold rounded-xl transition cursor-pointer ${
-                    revenuePeriod === p.id
-                      ? "bg-white text-emerald-700 shadow-xs"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
             </div>
 
             <p className="text-2xl font-black text-slate-900 mb-0.5">
@@ -356,21 +291,27 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-slate-400">
-              Hari Ini: <strong className="text-slate-700 font-bold">Rp {todayRevenue.toLocaleString("id-ID")}</strong>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setModalTransactionFilter(revenuePeriod);
-                setIsRevenueModalOpen(true);
-              }}
-              className="text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer hover:underline"
-            >
-              <span>Rekap</span>
-              <HiOutlineExternalLink className="w-3.5 h-3.5" />
-            </button>
+          {/* Ringkasan Ringkas Periode Lainnya */}
+          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            {revenuePeriod === "TODAY" ? (
+              <>
+                <span>Bulan: <strong className="text-slate-800 font-bold">Rp {thisMonthRevenue.toLocaleString("id-ID")}</strong></span>
+                <span>•</span>
+                <span>Tahun: <strong className="text-slate-800 font-bold">Rp {thisYearRevenue.toLocaleString("id-ID")}</strong></span>
+              </>
+            ) : revenuePeriod === "MONTH" ? (
+              <>
+                <span>Hari Ini: <strong className="text-slate-800 font-bold">Rp {todayRevenue.toLocaleString("id-ID")}</strong></span>
+                <span>•</span>
+                <span>Tahun: <strong className="text-slate-800 font-bold">Rp {thisYearRevenue.toLocaleString("id-ID")}</strong></span>
+              </>
+            ) : (
+              <>
+                <span>Hari Ini: <strong className="text-slate-800 font-bold">Rp {todayRevenue.toLocaleString("id-ID")}</strong></span>
+                <span>•</span>
+                <span>Bulan: <strong className="text-slate-800 font-bold">Rp {thisMonthRevenue.toLocaleString("id-ID")}</strong></span>
+              </>
+            )}
           </div>
         </div>
 
@@ -691,276 +632,6 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Popup Rekap Pendapatan Lengkap */}
-      {isRevenueModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 relative max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                  <HiOutlineChartBar className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-base sm:text-lg text-slate-900">
-                    Laporan &amp; Rekap Pendapatan Kasir
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    Ringkasan pemasukan transaksi lunas carwash hari ini, per bulan, dan per tahun
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRevenueModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="overflow-y-auto space-y-6 pt-5 pr-1 flex-1">
-              {/* 4 Kartu Metrik Ringkasan */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Hari Ini */}
-                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                      Hari Ini
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/60 text-emerald-800">
-                      {todayPaidOrders.length} Trx
-                    </span>
-                  </div>
-                  <p className="text-lg font-black text-emerald-950">
-                    Rp {todayRevenue.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[10px] text-emerald-600/80 font-medium mt-0.5">
-                    {now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                </div>
-
-                {/* Bulan Ini */}
-                <div className="bg-sky-50/70 border border-sky-200/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
-                      Bulan Ini
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-200/60 text-sky-800">
-                      {thisMonthPaidOrders.length} Trx
-                    </span>
-                  </div>
-                  <p className="text-lg font-black text-sky-950">
-                    Rp {thisMonthRevenue.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[10px] text-sky-600/80 font-medium mt-0.5">
-                    {now.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
-                  </p>
-                </div>
-
-                {/* Tahun Ini */}
-                <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700">
-                      Tahun {currentYear}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-200/60 text-purple-800">
-                      {thisYearPaidOrders.length} Trx
-                    </span>
-                  </div>
-                  <p className="text-lg font-black text-purple-950">
-                    Rp {thisYearRevenue.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[10px] text-purple-600/80 font-medium mt-0.5">
-                    Januari - Desember {currentYear}
-                  </p>
-                </div>
-
-                {/* Total Keseluruhan */}
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Total Akumulasi
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                      {paidOrders.length} Trx
-                    </span>
-                  </div>
-                  <p className="text-lg font-black text-slate-900">
-                    Rp {totalRevenue.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                    Seluruh Transaksi Lunas
-                  </p>
-                </div>
-              </div>
-
-              {/* Grafik Rekap Per Bulan dalam Tahun Berjalan */}
-              <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      Distribusi Pendapatan Per Bulan ({currentYear})
-                    </h4>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      Perbandingan performa omset kasir carwash sepanjang tahun
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono font-bold bg-white border border-slate-200 px-3 py-1 rounded-full text-slate-700 shadow-xs">
-                    Rp {thisYearRevenue.toLocaleString("id-ID")}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2 pt-2">
-                  {monthlyBreakdown.map((item, idx) => {
-                    const isCurrent = idx === currentMonth;
-                    const heightPercent = maxMonthRev > 0 ? Math.max((item.revenue / maxMonthRev) * 100, item.revenue > 0 ? 15 : 4) : 4;
-
-                    return (
-                      <div
-                        key={item.monthName}
-                        className={`flex flex-col items-center justify-end p-2 rounded-xl transition border ${
-                          isCurrent
-                            ? "bg-white border-emerald-300 shadow-xs ring-1 ring-emerald-200"
-                            : "bg-white/60 border-slate-200/60 hover:bg-white"
-                        }`}
-                      >
-                        <span className="text-[9px] font-mono text-slate-400 mb-1">
-                          {item.count > 0 ? `${item.count} trx` : "-"}
-                        </span>
-                        <div className="w-full bg-slate-100 rounded-lg h-16 flex items-end p-1">
-                          <div
-                            style={{ height: `${heightPercent}%` }}
-                            className={`w-full rounded-md transition-all duration-500 ${
-                              item.revenue > 0
-                                ? isCurrent
-                                  ? "bg-emerald-500"
-                                  : "bg-slate-800"
-                                : "bg-slate-200"
-                            }`}
-                            title={`${item.monthName}: Rp ${item.revenue.toLocaleString("id-ID")} (${item.count} pesanan)`}
-                          />
-                        </div>
-                        <span className={`text-[10px] font-bold mt-2 ${isCurrent ? "text-emerald-700 font-black" : "text-slate-700"}`}>
-                          {item.monthName}
-                        </span>
-                        <span className="text-[9px] font-mono text-slate-500 font-medium truncate max-w-full">
-                          {item.revenue > 0
-                            ? item.revenue >= 1_000_000
-                              ? `${(item.revenue / 1_000_000).toFixed(1)}jt`
-                              : `${Math.round(item.revenue / 1_000)}rb`
-                            : "0"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Rincian Daftar Transaksi Sesuai Filter Tab */}
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                    Daftar Transaksi Lunas ({modalFilteredOrders.length} Pesanan)
-                  </h4>
-
-                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full">
-                    {(
-                      [
-                        { id: "TODAY", label: "Hari Ini", count: todayPaidOrders.length },
-                        { id: "MONTH", label: "Bulan Ini", count: thisMonthPaidOrders.length },
-                        { id: "YEAR", label: "Tahun Ini", count: thisYearPaidOrders.length },
-                        { id: "ALL", label: "Semua", count: paidOrders.length },
-                      ] as const
-                    ).map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setModalTransactionFilter(tab.id)}
-                        className={`text-[11px] px-3 py-1 rounded-full font-bold transition cursor-pointer ${
-                          modalTransactionFilter === tab.id
-                            ? "bg-slate-900 text-white shadow-xs"
-                            : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        {tab.label} ({tab.count})
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {modalFilteredOrders.length === 0 ? (
-                  <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200/60">
-                    <p className="text-xs font-medium">Tidak ada transaksi lunas pada periode ini.</p>
-                  </div>
-                ) : (
-                  <div className="border border-slate-200/80 rounded-2xl overflow-hidden max-h-60 overflow-y-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100/90 text-slate-500 font-bold sticky top-0 border-b border-slate-200">
-                        <tr>
-                          <th className="py-2.5 px-4">Order ID</th>
-                          <th className="py-2.5 px-4">Pelanggan</th>
-                          <th className="py-2.5 px-4">Kendaraan</th>
-                          <th className="py-2.5 px-4">Waktu</th>
-                          <th className="py-2.5 px-4">Metode</th>
-                          <th className="py-2.5 px-4 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {modalFilteredOrders.map((ord) => (
-                          <tr key={ord.id} className="hover:bg-slate-50/80 transition">
-                            <td className="py-2.5 px-4 font-mono font-bold text-slate-500">
-                              #ORD-{String(ord.id).padStart(3, "0")}
-                            </td>
-                            <td className="py-2.5 px-4 font-bold text-slate-800">
-                              {ord.customer?.name || "Pelanggan"}
-                            </td>
-                            <td className="py-2.5 px-4 text-slate-600 font-mono">
-                              {ord.vehicle ? `${ord.vehicle.brand} ${ord.vehicle.model} (${ord.vehicle.plateNumber})` : "-"}
-                            </td>
-                            <td className="py-2.5 px-4 text-slate-500 font-mono text-[11px]">
-                              {formatOrderDate(ord.createdAt)}
-                            </td>
-                            <td className="py-2.5 px-4">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                {ord.paymentMethod || "CASH"}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-4 text-right font-black text-slate-900 font-mono">
-                              Rp {Number(ord.totalPrice).toLocaleString("id-ID")}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">
-                Total Rekap Ditampilkan:{" "}
-                <strong className="text-slate-900 font-bold">
-                  Rp{" "}
-                  {modalFilteredOrders
-                    .reduce((sum, o) => sum + Number(o.totalPrice || 0), 0)
-                    .toLocaleString("id-ID")}
-                </strong>
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsRevenueModalOpen(false)}
-                className="px-5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
-              >
-                Tutup
-              </button>
-            </div>
           </div>
         </div>
       )}

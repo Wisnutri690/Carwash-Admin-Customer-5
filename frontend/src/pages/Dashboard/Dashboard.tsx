@@ -6,7 +6,8 @@ import {
   HiOutlineUsers,
   HiOutlineClock,
   HiOutlineRefresh,
-  HiOutlineUserGroup
+  HiOutlineUserGroup,
+  HiOutlineTrendingUp
 } from "react-icons/hi";
 import { getCustomer } from "../../services/customerService";
 import { getOrders, updateOrderStatus, updateOrderPayment, updateOrder } from "../../services/orderService";
@@ -26,9 +27,6 @@ const Dashboard: React.FC = () => {
   const [assignStaffTargetOrder, setAssignStaffTargetOrder] = useState<Order | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<number | string>("");
   const [isAssigningStaff, setIsAssigningStaff] = useState<boolean>(false);
-
-  // Filter Periode Pendapatan: Hari Ini | Bulan Ini | Tahun Ini
-  const [revenuePeriod, setRevenuePeriod] = useState<"TODAY" | "MONTH" | "YEAR">("TODAY");
 
   const adminDataString = localStorage.getItem("admin");
   const admin = adminDataString ? JSON.parse(adminDataString) : { name: "Admin APEX", email: "admin@apexcarwash.com" };
@@ -105,27 +103,28 @@ const Dashboard: React.FC = () => {
   });
   const thisYearRevenue = thisYearPaidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // Nominal & Label yang aktif sesuai tab di kartu
-  const displayedRevenue =
-    revenuePeriod === "TODAY"
-      ? todayRevenue
-      : revenuePeriod === "MONTH"
-      ? thisMonthRevenue
-      : thisYearRevenue;
+  // 4. Total Keseluruhan
+  const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  const displayedCount =
-    revenuePeriod === "TODAY"
-      ? todayPaidOrders.length
-      : revenuePeriod === "MONTH"
-      ? thisMonthPaidOrders.length
-      : thisYearPaidOrders.length;
-
-  const displayedLabel =
-    revenuePeriod === "TODAY"
-      ? "Hari Ini"
-      : revenuePeriod === "MONTH"
-      ? "Bulan Ini"
-      : `Tahun ${currentYear}`;
+  // Rekap per bulan (12 bulan dalam tahun aktif) untuk kolom rekap di kanan
+  const monthNames = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  const monthlyBreakdown = monthNames.map((name, idx) => {
+    const monthOrders = thisYearPaidOrders.filter((o) => {
+      const d = new Date(o.createdAt);
+      return d.getMonth() === idx;
+    });
+    const rev = monthOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+    return {
+      monthIndex: idx,
+      monthName: name,
+      revenue: rev,
+      count: monthOrders.length,
+    };
+  });
+  const maxMonthRev = Math.max(...monthlyBreakdown.map((m) => m.revenue), 1);
 
   const waitingOrders = orders.filter((o) => o.status === "WAITING");
   const inProgressOrders = orders.filter((o) => o.status === "IN_PROGRESS");
@@ -253,66 +252,21 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div
-          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition flex flex-col justify-between"
+          onClick={() => navigate("/orders")}
+          className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:border-slate-300 transition cursor-pointer"
         >
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pendapatan Lunas</span>
-              {/* Tab Switcher: Hari Ini | Bulan | Tahun */}
-              <div className="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl">
-                {(
-                  [
-                    { id: "TODAY", label: "Hari Ini" },
-                    { id: "MONTH", label: "Bulan" },
-                    { id: "YEAR", label: "Tahun" },
-                  ] as const
-                ).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setRevenuePeriod(p.id)}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-lg transition cursor-pointer ${
-                      revenuePeriod === p.id
-                        ? "bg-white text-emerald-700 shadow-xs"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Penjualan Hari Ini</span>
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+              <HiOutlineCurrencyDollar className="w-4 h-4" />
             </div>
-
-            <p className="text-2xl font-black text-slate-900 mb-0.5">
-              Rp {displayedRevenue.toLocaleString("id-ID")}
-            </p>
-            <p className="text-[11px] text-slate-500 font-medium">
-              {displayedLabel} • {displayedCount} Transaksi Lunas
-            </p>
           </div>
-
-          {/* Ringkasan Ringkas Periode Lainnya */}
-          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-            {revenuePeriod === "TODAY" ? (
-              <>
-                <span>Bulan: <strong className="text-slate-800 font-bold">Rp {thisMonthRevenue.toLocaleString("id-ID")}</strong></span>
-                <span>•</span>
-                <span>Tahun: <strong className="text-slate-800 font-bold">Rp {thisYearRevenue.toLocaleString("id-ID")}</strong></span>
-              </>
-            ) : revenuePeriod === "MONTH" ? (
-              <>
-                <span>Hari Ini: <strong className="text-slate-800 font-bold">Rp {todayRevenue.toLocaleString("id-ID")}</strong></span>
-                <span>•</span>
-                <span>Tahun: <strong className="text-slate-800 font-bold">Rp {thisYearRevenue.toLocaleString("id-ID")}</strong></span>
-              </>
-            ) : (
-              <>
-                <span>Hari Ini: <strong className="text-slate-800 font-bold">Rp {todayRevenue.toLocaleString("id-ID")}</strong></span>
-                <span>•</span>
-                <span>Bulan: <strong className="text-slate-800 font-bold">Rp {thisMonthRevenue.toLocaleString("id-ID")}</strong></span>
-              </>
-            )}
-          </div>
+          <p className="text-2xl font-black text-slate-900 mb-1">
+            Rp {todayRevenue.toLocaleString("id-ID")}
+          </p>
+          <p className="text-[11px] text-slate-500 font-medium">
+            {todayPaidOrders.length} Transaksi Lunas Hari Ini
+          </p>
         </div>
 
         <div
@@ -479,6 +433,172 @@ const Dashboard: React.FC = () => {
 
         <div className="lg:col-span-4 space-y-4">
           
+          {/* Card Rekap Penjualan & Omset di Kolom Kanan */}
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                  <HiOutlineTrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 leading-tight">Rekap Penjualan</h3>
+                  <p className="text-[10px] text-slate-400 font-medium">Omset kasir terverifikasi lunas</p>
+                </div>
+              </div>
+              <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200/60">
+                {currentYear}
+              </span>
+            </div>
+
+            {/* Metrik Bulan Ini & Tahun Ini */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200/70 rounded-2xl">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
+                  Bulan Ini
+                </span>
+                <p className="text-base font-black text-emerald-950 mt-0.5 truncate">
+                  Rp {thisMonthRevenue.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[10px] text-emerald-600/90 font-medium mt-0.5">
+                  {thisMonthPaidOrders.length} Pesanan Lunas
+                </p>
+              </div>
+
+              <div className="p-3 bg-purple-50/70 border border-purple-200/70 rounded-2xl">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">
+                  Tahun {currentYear}
+                </span>
+                <p className="text-base font-black text-purple-950 mt-0.5 truncate">
+                  Rp {thisYearRevenue.toLocaleString("id-ID")}
+                </p>
+                <p className="text-[10px] text-purple-600/90 font-medium mt-0.5">
+                  {thisYearPaidOrders.length} Pesanan Lunas
+                </p>
+              </div>
+            </div>
+
+            {/* Total Akumulasi Keseluruhan */}
+            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Total Sepanjang Waktu
+                </span>
+                <p className="text-sm font-black text-slate-900 mt-0.5">
+                  Rp {totalRevenue.toLocaleString("id-ID")}
+                </p>
+              </div>
+              <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-200/70 text-slate-700">
+                {paidOrders.length} Total Trx
+              </span>
+            </div>
+
+            {/* Distribusi Omset Per Bulan */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  Omset Per Bulan ({currentYear})
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Jan - Des
+                </span>
+              </div>
+
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {monthlyBreakdown
+                  .filter((m) => m.revenue > 0 || m.monthIndex <= currentMonth)
+                  .reverse()
+                  .map((m) => {
+                    const isCurrent = m.monthIndex === currentMonth;
+                    const percent = maxMonthRev > 0 ? (m.revenue / maxMonthRev) * 100 : 0;
+
+                    return (
+                      <div
+                        key={m.monthName}
+                        className={`p-2.5 rounded-2xl border transition ${
+                          isCurrent
+                            ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                            : "bg-slate-50 text-slate-800 border-slate-100 hover:bg-slate-100/70"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className={`font-bold ${isCurrent ? "text-white" : "text-slate-800"}`}>
+                            {m.monthName} {isCurrent && "• Berjalan"}
+                          </span>
+                          <span className={`font-mono font-black ${isCurrent ? "text-emerald-400" : "text-slate-900"}`}>
+                            Rp {m.revenue.toLocaleString("id-ID")}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            style={{ width: `${Math.max(percent, m.revenue > 0 ? 8 : 0)}%` }}
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isCurrent ? "bg-emerald-400" : "bg-slate-700"
+                            }`}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] mt-1 text-slate-400">
+                          <span>{m.count} pesanan lunas</span>
+                          <span>{percent > 0 ? `${percent.toFixed(0)}% dari puncak` : "-"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Riwayat Transaksi Lunas Terkini */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  Transaksi Lunas Terkini
+                </span>
+                <button
+                  onClick={() => navigate("/orders")}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-900 hover:underline cursor-pointer"
+                >
+                  Semua ↗
+                </button>
+              </div>
+
+              {paidOrders.length === 0 ? (
+                <p className="text-xs text-slate-400 italic py-3 text-center bg-slate-50 rounded-2xl border border-slate-100">
+                  Belum ada transaksi lunas.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {paidOrders.slice(0, 4).map((order) => (
+                    <div
+                      key={order.id}
+                      className="p-2.5 bg-slate-50 hover:bg-slate-100/70 transition rounded-2xl border border-slate-100 flex items-center justify-between gap-2"
+                    >
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold text-slate-400">
+                            #ORD-{String(order.id).padStart(3, "0")}
+                          </span>
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-slate-200/80 text-slate-700 font-mono">
+                            {order.paymentMethod || "CASH"}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {order.customer?.name || "Pelanggan"}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-mono truncate">
+                          {order.vehicle ? `${order.vehicle.brand} (${order.vehicle.plateNumber})` : "-"}
+                        </p>
+                      </div>
+
+                      <p className="text-xs font-mono font-black text-slate-900 whitespace-nowrap">
+                        Rp {Number(order.totalPrice).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+
           <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-sm text-slate-900">Petugas Cuci</h3>

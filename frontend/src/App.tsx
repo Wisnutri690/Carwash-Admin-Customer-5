@@ -15,7 +15,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 🌟 Halaman Utama Publik Customer */}
         <Route path="/" element={<CustomerPortal />} />
         <Route path="/login" element={<Login />} />
 

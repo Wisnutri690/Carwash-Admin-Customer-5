@@ -65,7 +65,6 @@ const Dashboard: React.FC = () => {
     };
   }, []);
 
-  // --- PERHITUNGAN REKAP PENDAPATAN (HARI INI, BULAN INI, TAHUN INI) ---
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -73,7 +72,6 @@ const Dashboard: React.FC = () => {
 
   const paidOrders = orders.filter((o) => o.paymentStatus === "PAID");
 
-  // 1. Pendapatan Hari Ini
   const todayPaidOrders = paidOrders.filter((o) => {
     const d = new Date(o.createdAt);
     return (
@@ -85,7 +83,6 @@ const Dashboard: React.FC = () => {
   });
   const todayRevenue = todayPaidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // 2. Pendapatan Bulan Ini
   const thisMonthPaidOrders = paidOrders.filter((o) => {
     const d = new Date(o.createdAt);
     return (
@@ -96,17 +93,14 @@ const Dashboard: React.FC = () => {
   });
   const thisMonthRevenue = thisMonthPaidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // 3. Pendapatan Tahun Ini
   const thisYearPaidOrders = paidOrders.filter((o) => {
     const d = new Date(o.createdAt);
     return !isNaN(d.getTime()) && d.getFullYear() === currentYear;
   });
   const thisYearRevenue = thisYearPaidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // 4. Total Keseluruhan
   const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
 
-  // Rekap per bulan (12 bulan dalam tahun aktif) untuk kolom rekap di kanan
   const monthNames = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
@@ -432,8 +426,6 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="lg:col-span-4 space-y-4">
-          
-          {/* Card Rekap Penjualan & Omset di Kolom Kanan */}
           <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -450,7 +442,6 @@ const Dashboard: React.FC = () => {
               </span>
             </div>
 
-            {/* Metrik Bulan Ini & Tahun Ini */}
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3 bg-emerald-50/70 border border-emerald-200/70 rounded-2xl">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
@@ -477,7 +468,6 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Total Akumulasi Keseluruhan */}
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
@@ -492,7 +482,6 @@ const Dashboard: React.FC = () => {
               </span>
             </div>
 
-            {/* Distribusi Omset Per Bulan */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
@@ -546,7 +535,6 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Riwayat Transaksi Lunas Terkini */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
@@ -649,7 +637,6 @@ const Dashboard: React.FC = () => {
 
       </div>
 
-      {/* Modal Popup Pilih Staff */}
       {assignStaffTargetOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">

@@ -6,17 +6,13 @@ const NotFound = () => {
 
     return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden text-center selection:bg-purple-500 selection:text-white">
-            {/* Ambient Purple Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/15 rounded-full blur-[140px] pointer-events-none" />
 
-            {/* Background Watermark 404 */}
             <div className="absolute select-none pointer-events-none text-[16rem] sm:text-[22rem] font-black text-neutral-900/60 font-mono tracking-tighter -z-0">
                 404
             </div>
 
-            {/* Card Content */}
             <div className="relative z-10 max-w-lg w-full bg-neutral-950/80 border border-neutral-800/80 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-6">
-                {/* Brand Logo Accent */}
                 <div className="inline-flex items-center gap-2">
                     <span className="text-xl font-extrabold tracking-[0.25em] text-white">
                         APEX<span className="text-purple-500">.</span>
@@ -26,7 +22,6 @@ const NotFound = () => {
                     </span>
                 </div>
 
-                {/* Icon & Message */}
                 <div className="space-y-3">
                     <div className="w-16 h-16 rounded-2xl bg-purple-950/50 border border-purple-800/60 text-purple-400 flex items-center justify-center mx-auto shadow-lg shadow-purple-950/40">
                         <HiOutlineExclamationCircle className="w-8 h-8" />
@@ -39,7 +34,6 @@ const NotFound = () => {
                     </p>
                 </div>
 
-                {/* Navigation Action Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <button
                         onClick={() => navigate(-1)}
@@ -59,7 +53,6 @@ const NotFound = () => {
                 </div>
             </div>
 
-            {/* Footer Tag */}
             <p className="relative z-10 text-[11px] font-mono text-neutral-600 mt-8 tracking-widest uppercase">
                 APEX Management System • 404 Route Handler
             </p>

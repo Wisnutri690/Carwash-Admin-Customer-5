@@ -10,7 +10,8 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineArrowLeft,
   HiOutlinePrinter,
-  HiOutlineUserGroup
+  HiOutlineUserGroup,
+  HiCheck
 } from "react-icons/hi";
 import {
   getOrders, createOrder, updateOrderStatus, updateOrderPayment, deleteOrder, updateOrder
@@ -742,7 +743,7 @@ const OrderList: React.FC = () => {
                         <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold ${
                           isSelected ? "bg-white text-slate-900 border-white" : "border-slate-300 text-transparent"
                         }`}>
-                          ✓
+                          <HiCheck className="w-3 h-3" />
                         </span>
                       </div>
                     );
@@ -813,7 +814,7 @@ const OrderList: React.FC = () => {
                   }`}
                 >
                   <span>{m}</span>
-                  {selectedPaymentMethod === m && <span>✓</span>}
+                  {selectedPaymentMethod === m && <HiCheck className="w-4 h-4" />}
                 </div>
               ))}
             </div>
@@ -958,7 +959,7 @@ const OrderList: React.FC = () => {
                 onClick={() => setAssignStaffTargetOrder(null)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
               >
-                ✕
+                <HiOutlineX className="w-4 h-4" />
               </button>
             </div>
 
@@ -1017,7 +1018,7 @@ const OrderList: React.FC = () => {
                                 : "bg-rose-100 text-rose-700"
                             }`}
                           >
-                            {staff.isActive ? "🟢 Aktif" : "🔴 Tidak Aktif"}
+                            {staff.isActive ? "Aktif" : "Tidak Aktif"}
                           </span>
                         </div>
                       );

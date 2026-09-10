@@ -12,7 +12,7 @@ export const initSocket = (server: HttpServer): SocketIOServer => {
   });
 
   io.on("connection", (socket) => {
-    console.log(`⚡ [Socket.IO] Client connected: ${socket.id}`);
+    console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
     socket.on("disconnect", () => {
       console.log(`[Socket.IO] Client disconnected: ${socket.id}`);

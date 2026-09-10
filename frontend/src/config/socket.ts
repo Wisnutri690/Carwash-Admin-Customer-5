@@ -11,15 +11,15 @@ export const socket = io(SOCKET_URL, {
 });
 
 socket.on("connect", () => {
-  console.log("⚡ [Socket.IO Client] Connected to backend server:", socket.id);
+  console.log("[Socket.IO Client] Connected to backend server:", socket.id);
 });
 
 socket.on("disconnect", (reason) => {
-  console.log("❌ [Socket.IO Client] Disconnected from backend:", reason);
+  console.log("[Socket.IO Client] Disconnected from backend:", reason);
 });
 
 socket.on("connect_error", (error) => {
-  console.error("⚠️ [Socket.IO Client] Connection Error:", error.message);
+  console.error("[Socket.IO Client] Connection Error:", error.message);
 });
 
 export default socket;

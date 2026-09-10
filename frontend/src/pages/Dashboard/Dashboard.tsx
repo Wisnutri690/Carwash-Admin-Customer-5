@@ -7,7 +7,8 @@ import {
   HiOutlineClock,
   HiOutlineRefresh,
   HiOutlineUserGroup,
-  HiOutlineTrendingUp
+  HiOutlineTrendingUp,
+  HiX
 } from "react-icons/hi";
 import { getCustomer } from "../../services/customerService";
 import { getOrders, updateOrderStatus, updateOrderPayment, updateOrder } from "../../services/orderService";
@@ -303,7 +304,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black text-slate-900">Alur Pengerjaan Cuci</h2>
               <span className="text-xs font-mono bg-slate-100 px-2.5 py-0.5 rounded-full text-slate-600 font-bold">
-                {filteredOrders.length} Order
+                {filteredOrders.length > 5 ? `5 Terbaru (${filteredOrders.length} Total)` : `${filteredOrders.length} Order`}
               </span>
             </div>
 
@@ -336,7 +337,7 @@ const Dashboard: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredOrders.map((order) => {
+              {filteredOrders.slice(0, 5).map((order) => {
                 const servicesList = order.orderItems?.map((item) => item.service?.name).join(", ");
                 const isPaid = order.paymentStatus === "PAID";
 
@@ -420,6 +421,17 @@ const Dashboard: React.FC = () => {
                   </div>
                 );
               })}
+
+              {filteredOrders.length > 5 && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => navigate("/orders")}
+                    className="w-full py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs rounded-2xl transition shadow-xs flex items-center justify-center cursor-pointer"
+                  >
+                    <span>Lihat {filteredOrders.length - 5} order lainnya di menu Antrean Kasir</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -482,56 +494,48 @@ const Dashboard: React.FC = () => {
               </span>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                  Omset Per Bulan ({currentYear})
+            <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Tren Omset Bulanan ({currentYear})
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  Jan - Des
+                <span className="text-[10px] font-bold text-slate-700">
+                  Bulan Ini: <strong className="text-emerald-700">Rp {thisMonthRevenue.toLocaleString("id-ID")}</strong>
                 </span>
               </div>
 
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {monthlyBreakdown
-                  .filter((m) => m.revenue > 0 || m.monthIndex <= currentMonth)
-                  .reverse()
-                  .map((m) => {
-                    const isCurrent = m.monthIndex === currentMonth;
-                    const percent = maxMonthRev > 0 ? (m.revenue / maxMonthRev) * 100 : 0;
+              <div className="flex items-end justify-between gap-1.5 h-16 pt-2 px-1">
+                {monthlyBreakdown.map((m) => {
+                  const isCurrent = m.monthIndex === currentMonth;
+                  const percent = maxMonthRev > 0 ? (m.revenue / maxMonthRev) * 100 : 0;
+                  const shortName = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"][m.monthIndex];
 
-                    return (
-                      <div
-                        key={m.monthName}
-                        className={`p-2.5 rounded-2xl border transition ${
-                          isCurrent
-                            ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                            : "bg-slate-50 text-slate-800 border-slate-100 hover:bg-slate-100/70"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className={`font-bold ${isCurrent ? "text-white" : "text-slate-800"}`}>
-                            {m.monthName} {isCurrent && "• Berjalan"}
-                          </span>
-                          <span className={`font-mono font-black ${isCurrent ? "text-emerald-400" : "text-slate-900"}`}>
-                            Rp {m.revenue.toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            style={{ width: `${Math.max(percent, m.revenue > 0 ? 8 : 0)}%` }}
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isCurrent ? "bg-emerald-400" : "bg-slate-700"
-                            }`}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] mt-1 text-slate-400">
-                          <span>{m.count} pesanan lunas</span>
-                          <span>{percent > 0 ? `${percent.toFixed(0)}% dari puncak` : "-"}</span>
-                        </div>
+                  return (
+                    <div
+                      key={m.monthName}
+                      className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer"
+                      title={`${m.monthName}: Rp ${m.revenue.toLocaleString("id-ID")} (${m.count} pesanan)`}
+                    >
+                      <div className="w-full h-11 bg-slate-200/50 rounded-md flex items-end overflow-hidden p-0.5">
+                        <div
+                          style={{ height: `${Math.max(percent, m.revenue > 0 ? 15 : 6)}%` }}
+                          className={`w-full rounded-sm transition-all duration-300 ${
+                            isCurrent
+                              ? "bg-slate-900 shadow-xs"
+                              : m.revenue > 0
+                              ? "bg-emerald-500 hover:bg-emerald-600"
+                              : "bg-slate-300/60"
+                          }`}
+                        />
                       </div>
-                    );
-                  })}
+                      <span className={`text-[8px] font-mono leading-none ${
+                        isCurrent ? "font-black text-slate-900 underline" : "text-slate-400"
+                      }`}>
+                        {shortName}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -544,7 +548,7 @@ const Dashboard: React.FC = () => {
                   onClick={() => navigate("/orders")}
                   className="text-[10px] font-bold text-slate-500 hover:text-slate-900 hover:underline cursor-pointer"
                 >
-                  Semua ↗
+                  Lihat Semua
                 </button>
               </div>
 
@@ -553,8 +557,8 @@ const Dashboard: React.FC = () => {
                   Belum ada transaksi lunas.
                 </p>
               ) : (
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {paidOrders.slice(0, 4).map((order) => (
+                <div className="space-y-1.5">
+                  {paidOrders.slice(0, 3).map((order) => (
                     <div
                       key={order.id}
                       className="p-2.5 bg-slate-50 hover:bg-slate-100/70 transition rounded-2xl border border-slate-100 flex items-center justify-between gap-2"
@@ -620,19 +624,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-md">
-            <h3 className="font-black text-sm mb-1">Akses Portal Customer</h3>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Ingin menguji pemesanan langsung sebagai pelanggan atau melihat live tracking mobil?
-            </p>
-            <button
-              onClick={() => navigate("/")}
-              className="w-full py-2.5 bg-white text-slate-900 font-bold text-xs rounded-full hover:bg-slate-100 transition shadow-sm"
-            >
-              Buka Layar Customer
-            </button>
-          </div>
-
         </div>
 
       </div>
@@ -654,7 +645,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => setAssignStaffTargetOrder(null)}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
               >
-                ✕
+                <HiX className="w-4 h-4" />
               </button>
             </div>
 
@@ -713,7 +704,7 @@ const Dashboard: React.FC = () => {
                                 : "bg-rose-100 text-rose-700"
                             }`}
                           >
-                            {staff.isActive ? "🟢 Aktif" : "🔴 Tidak Aktif"}
+                            {staff.isActive ? "Aktif" : "Tidak Aktif"}
                           </span>
                         </div>
                       );

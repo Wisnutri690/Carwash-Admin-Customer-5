@@ -36,6 +36,7 @@ import {
   HiOutlinePencilAlt,
   HiOutlinePhone,
   HiOutlineMail,
+  HiCheck
 } from "react-icons/hi";
 import { FaCar, FaSoap } from "react-icons/fa";
 import { createSnapPayment } from "../../services/snapCustomer";
@@ -772,14 +773,14 @@ const CustomerPortal: React.FC = () => {
                         >
                           {payingOrderId === Number(currentOrder.id)
                             ? "Memproses..."
-                            : "💳 Bayar Sekarang"}
+                            : "Bayar Sekarang"}
                         </button>
                       ) : (
                         <button
                           onClick={() => setSelectedInvoiceOrder(currentOrder)}
                           className="bg-slate-900 hover:bg-black text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition"
                         >
-                          📄 Lihat Invoice
+                          Lihat Invoice
                         </button>
                       )}
                     </div>
@@ -825,7 +826,7 @@ const CustomerPortal: React.FC = () => {
                           onClick={() => setSelectedInvoiceOrder(latestCompletedOrder)}
                           className="bg-slate-900 hover:bg-black text-white font-bold text-xs px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 cursor-pointer transition"
                         >
-                          📄 Lihat Invoice
+                          Lihat Invoice
                         </button>
                       ) : (
                         <button
@@ -835,7 +836,7 @@ const CustomerPortal: React.FC = () => {
                         >
                           {payingOrderId === Number(latestCompletedOrder.id)
                             ? "Memproses..."
-                            : "💳 Bayar Sekarang"}
+                            : "Bayar Sekarang"}
                         </button>
                       )}
                     </div>
@@ -891,7 +892,7 @@ const CustomerPortal: React.FC = () => {
                                 : "border-slate-300 text-transparent"
                             }`}
                           >
-                            ✓
+                            <HiCheck className="w-3.5 h-3.5" />
                           </span>
                         </div>
                       );
@@ -947,7 +948,7 @@ const CustomerPortal: React.FC = () => {
                               : "border-slate-300 text-transparent"
                           }`}
                         >
-                          ✓
+                          <HiCheck className="w-3.5 h-3.5" />
                         </div>
                       </div>
                       <p
@@ -1947,7 +1948,7 @@ const CustomerPortal: React.FC = () => {
                 onClick={() => window.print()}
                 className="px-5 py-2.5 bg-black hover:bg-slate-800 text-white font-bold text-xs rounded-full transition shadow-md flex items-center gap-1.5 cursor-pointer"
               >
-                🖨️ Cetak / Unduh PDF
+                Cetak / Unduh PDF
               </button>
             </div>
           </div>

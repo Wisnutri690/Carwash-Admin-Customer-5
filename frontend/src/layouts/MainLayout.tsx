@@ -8,8 +8,7 @@ import {
   HiOutlineSparkles, 
   HiOutlineUserGroup,
   HiOutlineLogout,
-  HiOutlineUser,
-  HiOutlineGlobeAlt
+  HiOutlineUser
 } from "react-icons/hi";
 
 const MainLayout: React.FC = () => {
@@ -53,15 +52,6 @@ const MainLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/")}
-              className="flex items-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-800 px-4 py-2 rounded-full text-xs font-bold transition shadow-sm cursor-pointer"
-              title="Buka Portal Customer"
-            >
-              <HiOutlineGlobeAlt className="text-neutral-900 text-sm" />
-              <span className="hidden md:inline">Portal Customer</span>
-            </button>
-
             <div className="flex items-center gap-2.5 bg-white border border-neutral-200 rounded-full px-3.5 py-1.5 shadow-sm">
               <div className="w-7 h-7 rounded-full bg-neutral-100 text-neutral-900 flex items-center justify-center text-xs font-bold">
                 <HiOutlineUser className="w-4 h-4" />
